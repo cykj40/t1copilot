@@ -1,0 +1,1 @@
+{"version":3,"file":"drizzle.neon.config.js","sourceRoot":"","sources":["drizzle.neon.config.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,YAAY,EAAE,MAAM,aAAa,CAAA;AAE1C,eAAe,YAAY,CAAC;IAC1B,OAAO,EAAE,YAAY;IACrB,MAAM,EAAE,4BAA4B;IACpC,GAAG,EAAE,gBAAgB;IACrB,aAAa,EAAE;QACb,GAAG,EAAE,OAAO,CAAC,GAAG,CAAC,YAAY,IAAI,EAAE;KACpC;CACF,CAAC,CAAA"}

@@ -19,7 +19,13 @@ export default tseslint.config(
   {
     languageOptions: {
       parserOptions: {
-        projectService: true,
+        projectService: {
+          defaultProject: 'packages/db/tsconfig.lint.json',
+          allowDefaultProject: [
+            'packages/db/drizzle.*.config.ts',
+            'packages/db/drizzle.*.config.d.ts',
+          ],
+        },
         tsconfigRootDir: import.meta.dirname,
       },
       globals: {
@@ -37,6 +43,7 @@ export default tseslint.config(
         { prefer: 'type-imports', fixStyle: 'inline-type-imports' },
       ],
       '@typescript-eslint/no-import-type-side-effects': 'error',
+      '@typescript-eslint/triple-slash-reference': 'error',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-explicit-any': 'error',
@@ -47,6 +54,21 @@ export default tseslint.config(
       '@typescript-eslint/await-thenable': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
       'no-console': ['warn', { allow: ['warn', 'error'] }],
+    },
+  },
+  {
+    files: ['packages/db/drizzle.*.config.ts'],
+    linterOptions: {
+      reportUnusedDisableDirectives: 'off',
+    },
+    rules: {
+      '@typescript-eslint/dot-notation': 'off',
+    },
+  },
+  {
+    files: ['packages/db/drizzle.*.config.d.ts'],
+    rules: {
+      '@typescript-eslint/consistent-type-imports': 'off',
     },
   },
   {

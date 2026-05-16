@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
+    "dotenv": "^16.0.0",
     "@neondatabase/serverless": "^0.10.4",
     "@paralleldrive/cuid2": "^2.2.2",
     "@t1pilot/types": "workspace:*",
