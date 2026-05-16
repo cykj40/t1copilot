@@ -32,7 +32,7 @@ export type GlucoseReading = z.infer<typeof GlucoseReadingSchema>
 
 // ── Insulin ───────────────────────────────────────────────────────────────────
 
-export const InsulinTypeSchema = z.enum(['rapid', 'long'])
+export const InsulinTypeSchema = z.enum(['rapid', 'long', 'correction'])
 export type InsulinType = z.infer<typeof InsulinTypeSchema>
 
 export const InsulinEventSchema = z.object({
