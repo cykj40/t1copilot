@@ -57,6 +57,9 @@ importers:
       '@langchain/anthropic':
         specifier: ^0.3.13
         version: 0.3.34(@langchain/core@0.3.80)(zod@3.25.76)
+      '@langchain/core':
+        specifier: ^0.3.0
+        version: 0.3.80
       '@langchain/langgraph':
         specifier: ^0.2.55
         version: 0.2.74(@langchain/core@0.3.80)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(zod-to-json-schema@3.25.2(zod@3.25.76))
@@ -69,6 +72,9 @@ importers:
       '@t1copilot/utils':
         specifier: workspace:*
         version: link:../utils
+      dotenv:
+        specifier: ^16.0.0
+        version: 16.6.1
       zod:
         specifier: ^3.24.1
         version: 3.25.76
@@ -120,6 +126,9 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
     devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.17
       typescript:
         specifier: ^5.7.3
         version: 5.9.3

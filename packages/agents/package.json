@@ -19,10 +19,12 @@
   },
   "dependencies": {
     "@langchain/anthropic": "^0.3.13",
+    "@langchain/core": "^0.3.0",
     "@langchain/langgraph": "^0.2.55",
     "@t1copilot/db": "workspace:*",
     "@t1copilot/types": "workspace:*",
     "@t1copilot/utils": "workspace:*",
+    "dotenv": "^16.0.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
