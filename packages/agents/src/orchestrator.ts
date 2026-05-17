@@ -1,5 +1,5 @@
 import { Annotation, StateGraph } from '@langchain/langgraph'
-import type { GlucoseReading } from '@t1pilot/types'
+import type { GlucoseReading } from '@t1copilot/types'
 
 const OrchestratorState = Annotation.Root({
   readings: Annotation<GlucoseReading[]>({

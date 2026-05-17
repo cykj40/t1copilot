@@ -1,5 +1,5 @@
 {
-  "name": "@t1pilot/mcp-clients",
+  "name": "@t1copilot/mcp-clients",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.10.2",
-    "@t1pilot/types": "workspace:*",
+    "@t1copilot/types": "workspace:*",
     "zod": "^3.24.1"
   },
   "devDependencies": {

@@ -1,4 +1,4 @@
-import type { InsulinEvent } from '@t1pilot/types'
+import type { InsulinEvent } from '@t1copilot/types'
 
 export interface InsulinSummary {
   totalUnits: number

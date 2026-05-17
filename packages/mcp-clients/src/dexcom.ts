@@ -13,7 +13,7 @@ export async function createDexcomMcpClient(options: DexcomMcpClientOptions) {
   })
 
   const client = new Client(
-    { name: 't1pilot-dexcom-client', version: '0.0.1' },
+    { name: 't1copilot-dexcom-client', version: '0.0.1' },
     { capabilities: {} },
   )
 

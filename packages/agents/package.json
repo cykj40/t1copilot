@@ -1,5 +1,5 @@
 {
-  "name": "@t1pilot/agents",
+  "name": "@t1copilot/agents",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -20,9 +20,9 @@
   "dependencies": {
     "@langchain/anthropic": "^0.3.13",
     "@langchain/langgraph": "^0.2.55",
-    "@t1pilot/db": "workspace:*",
-    "@t1pilot/types": "workspace:*",
-    "@t1pilot/utils": "workspace:*",
+    "@t1copilot/db": "workspace:*",
+    "@t1copilot/types": "workspace:*",
+    "@t1copilot/utils": "workspace:*",
     "zod": "^3.24.1"
   },
   "devDependencies": {

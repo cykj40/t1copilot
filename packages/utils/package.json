@@ -1,5 +1,5 @@
 {
-  "name": "@t1pilot/utils",
+  "name": "@t1copilot/utils",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -18,7 +18,7 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@t1pilot/types": "workspace:*"
+    "@t1copilot/types": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.7.3"

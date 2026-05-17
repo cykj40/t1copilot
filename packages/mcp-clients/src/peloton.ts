@@ -13,7 +13,7 @@ export async function createPelotonMcpClient(options: PelotonMcpClientOptions) {
   })
 
   const client = new Client(
-    { name: 't1pilot-peloton-client', version: '0.0.1' },
+    { name: 't1copilot-peloton-client', version: '0.0.1' },
     { capabilities: {} },
   )
 

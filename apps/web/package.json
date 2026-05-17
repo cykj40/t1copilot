@@ -1,5 +1,5 @@
 {
-  "name": "@t1pilot/web",
+  "name": "@t1copilot/web",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -10,8 +10,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@t1pilot/types": "workspace:*",
-    "@t1pilot/utils": "workspace:*",
+    "@t1copilot/types": "workspace:*",
+    "@t1copilot/utils": "workspace:*",
     "next": "15.3.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

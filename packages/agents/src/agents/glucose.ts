@@ -1,5 +1,5 @@
-import type { GlucoseReading } from '@t1pilot/types'
-import { classifyGlucose } from '@t1pilot/utils'
+import type { GlucoseReading } from '@t1copilot/types'
+import { classifyGlucose } from '@t1copilot/utils'
 
 export interface GlucoseAnalysis {
   zone: ReturnType<typeof classifyGlucose>

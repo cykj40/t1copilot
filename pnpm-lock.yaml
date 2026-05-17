@@ -20,10 +20,10 @@ importers:
 
   apps/web:
     dependencies:
-      '@t1pilot/types':
+      '@t1copilot/types':
         specifier: workspace:*
         version: link:../../packages/types
-      '@t1pilot/utils':
+      '@t1copilot/utils':
         specifier: workspace:*
         version: link:../../packages/utils
       next:
@@ -60,13 +60,13 @@ importers:
       '@langchain/langgraph':
         specifier: ^0.2.55
         version: 0.2.74(@langchain/core@0.3.80)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(zod-to-json-schema@3.25.2(zod@3.25.76))
-      '@t1pilot/db':
+      '@t1copilot/db':
         specifier: workspace:*
         version: link:../db
-      '@t1pilot/types':
+      '@t1copilot/types':
         specifier: workspace:*
         version: link:../types
-      '@t1pilot/utils':
+      '@t1copilot/utils':
         specifier: workspace:*
         version: link:../utils
       zod:
@@ -88,7 +88,7 @@ importers:
       '@paralleldrive/cuid2':
         specifier: ^2.2.2
         version: 2.3.1
-      '@t1pilot/types':
+      '@t1copilot/types':
         specifier: workspace:*
         version: link:../types
       dotenv:
@@ -113,7 +113,7 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.10.2
         version: 1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76)
-      '@t1pilot/types':
+      '@t1copilot/types':
         specifier: workspace:*
         version: link:../types
       zod:
@@ -136,7 +136,7 @@ importers:
 
   packages/utils:
     dependencies:
-      '@t1pilot/types':
+      '@t1copilot/types':
         specifier: workspace:*
         version: link:../types
     devDependencies:
