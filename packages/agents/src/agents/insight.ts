@@ -8,7 +8,7 @@ import {
 } from '../tools/peloton.js'
 
 function createLlm(): ChatAnthropic {
-  return new ChatAnthropic({ model: 'claude-sonnet-4-6' })
+  return new ChatAnthropic({ model: 'claude-sonnet-4-5-20250929' })
 }
 
 export async function insightAgentNode(state: T1CopilotState): Promise<Partial<T1CopilotState>> {
