@@ -5,26 +5,23 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "lint": "turbo run lint && prettier --check \"**/*.{ts,tsx,js,mjs,json,css,md}\"",
-    "format": "prettier --write \"**/*.{ts,tsx,js,mjs,json,css,md}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,json,css,md}\"",
+    "lint": "turbo run lint",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "check": "biome check .",
+    "check:write": "biome check --write .",
     "typecheck": "turbo run typecheck",
     "clean": "turbo run clean && rm -rf node_modules",
+    "prepare": "git config core.hooksPath .githooks",
     "db:generate:neon": "turbo run db:generate:neon",
     "db:migrate:neon": "turbo run db:migrate:neon",
     "db:generate:turso": "turbo run db:generate:turso",
     "db:migrate:turso": "turbo run db:migrate:turso"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "eslint": "^10.2.1",
-    "eslint-config-prettier": "^10.1.8",
-    "globals": "^17.5.0",
-    "lefthook": "^2.1.6",
-    "prettier": "^3.8.3",
+    "@biomejs/biome": "latest",
     "turbo": "^2.3.3",
-    "typescript": "^5.7.3",
-    "typescript-eslint": "^8.59.0"
+    "typescript": "^5.7.3"
   },
   "engines": {
     "node": ">=20.0.0",
