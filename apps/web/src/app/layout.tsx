@@ -13,8 +13,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={cn('dark font-sans', geist.variable)}>
-      <body className="bg-background text-foreground min-h-screen">
+    <html lang="en" className={cn('dark', geist.variable)}>
+      <body className="bg-background text-foreground min-h-screen antialiased">
         <TooltipProvider delay={300}>{children}</TooltipProvider>
       </body>
     </html>

@@ -1,14 +1,17 @@
 import { anthropic } from '@ai-sdk/anthropic'
-import {
-  convertToModelMessages,
-  createUIMessageStream,
-  createUIMessageStreamResponse,
-  streamText,
-} from 'ai'
-import type { ArtifactData, T1UIMessage } from '@/types/artifacts'
+import { convertToModelMessages, streamText, tool } from 'ai'
+import { z } from 'zod'
+import type { T1UIMessage } from '@/types/artifacts'
 
 const SYSTEM_PROMPT = `You are T1Copilot, an AI assistant specialized in Type 1 diabetes management.
-You analyze CGM data, workout patterns, and metabolic events to help the user understand their diabetes.
+
+Available tools — call the right one based on user intent:
+- render_glucose_chart: user asks about glucose trends, CGM data, readings, blood sugar levels
+- render_workout_correlation: user asks about workouts, exercise, Peloton rides, activity impact
+- render_weekly_summary: user wants a weekly summary, recap, or overview of their week
+- render_doctor_checklist: user wants to prepare for an endo or doctor appointment
+- confirm_log_event: user wants to log insulin, carbs, or exercise — ALWAYS show the confirmation card, NEVER auto-log
+
 Rules:
 - Never recommend specific insulin doses
 - Never suggest changing ISF, ICR, or basal rates
@@ -16,82 +19,58 @@ Rules:
 - Be concise — responses under 150 words
 - End every response with: ⚠️ T1Copilot is assistive only. All health decisions require your judgment and your care team.`
 
-function detectIntent(text: string): 'glucose' | 'exercise' | 'log' | 'insight' | 'general' {
-  const lower = text.toLowerCase()
-  if (/glucose|trend|cgm|reading|sugar|bg\b|level/.test(lower)) return 'glucose'
-  if (/workout|ride|peloton|exercise|run|class|cardio/.test(lower)) return 'exercise'
-  if (/log|carb|insulin|inject|dose|bolus/.test(lower)) return 'log'
-  if (/insight|pattern|week|summary|analyze|correlation/.test(lower)) return 'insight'
-  return 'general'
-}
-
-function buildArtifact(intent: string): ArtifactData {
-  if (intent === 'glucose') {
-    return {
-      artifactType: 'glucose_chart',
-      currentValue: 142,
-      currentTrend: 'FORTY_FIVE_UP',
-      timeInRangePercent: 73,
-      unit: 'mg/dL',
-    }
-  }
-  if (intent === 'exercise') {
-    return {
-      artifactType: 'workout_card',
-      discipline: 'Cycling',
-      durationMinutes: 45,
-      glucoseDropMgdl: 28,
-      hypoRisk: 'moderate',
-    }
-  }
-  if (intent === 'log') {
-    return {
-      artifactType: 'event_log_confirmation',
-      eventType: 'carbs',
-      details: 'Pending HITL approval before logging.',
-      requiresApproval: true,
-    }
-  }
-  return {
-    artifactType: 'insight_card',
-    title: '7-Day Pattern',
-    summary:
-      'Your time-in-range improved 8% vs last week. Post-workout lows appear 2–4 hours after cycling sessions.',
-    confidence: 0.82,
-    actionable: true,
-  }
-}
-
 export async function POST(req: Request): Promise<Response> {
   const body = (await req.json()) as { messages: T1UIMessage[] }
   const { messages } = body
 
-  const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')
-  const queryText =
-    lastUserMessage?.parts
-      .filter((p) => p.type === 'text')
-      .map((p) => (p as { type: 'text'; text: string }).text)
-      .join('') ?? ''
-
-  const intent = detectIntent(queryText)
-  const artifact = buildArtifact(intent)
-
-  const stream = createUIMessageStream<T1UIMessage>({
-    execute: async ({ writer }) => {
-      writer.write({
-        type: 'data-artifact',
-        data: artifact,
-      })
-
-      const result = streamText({
-        model: anthropic('claude-haiku-4-5-20251001'),
-        system: SYSTEM_PROMPT,
-        messages: await convertToModelMessages(messages),
-      })
-
-      writer.merge(result.toUIMessageStream())
+  const result = streamText({
+    model: anthropic('claude-haiku-4-5-20251001'),
+    system: SYSTEM_PROMPT,
+    messages: await convertToModelMessages(messages),
+    tools: {
+      render_glucose_chart: tool({
+        description: 'Render a glucose trend chart in the right panel',
+        inputSchema: z.object({
+          timeRange: z.string().describe('Time range, e.g. "24h" or "7d"'),
+          title: z.string().describe('Chart title'),
+        }),
+        execute: async ({ timeRange, title }) => ({ timeRange, title }),
+      }),
+      render_workout_correlation: tool({
+        description: 'Render a workout glucose correlation artifact in the right panel',
+        inputSchema: z.object({
+          workoutId: z.string().describe('Workout identifier'),
+          workoutName: z.string().describe('Workout name, e.g. "45min Cycling"'),
+        }),
+        execute: async ({ workoutId, workoutName }) => ({ workoutId, workoutName }),
+      }),
+      render_weekly_summary: tool({
+        description: 'Render a weekly glucose summary artifact in the right panel',
+        inputSchema: z.object({
+          weekLabel: z.string().describe('Week label, e.g. "May 12–18"'),
+        }),
+        execute: async ({ weekLabel }) => ({ weekLabel }),
+      }),
+      render_doctor_checklist: tool({
+        description: 'Render an endocrinologist appointment prep checklist in the right panel',
+        inputSchema: z.object({
+          appointmentDate: z.string().optional().describe('Optional appointment date string'),
+        }),
+        execute: async ({ appointmentDate }) => ({ appointmentDate }),
+      }),
+      confirm_log_event: tool({
+        description:
+          'Show a HITL confirmation card for logging a medical event. User must explicitly confirm before anything is logged.',
+        inputSchema: z.object({
+          eventType: z.enum(['insulin', 'carbs', 'exercise']),
+          value: z.number().describe('Numeric value (units, grams, or minutes)'),
+          unit: z.string().describe('Unit string, e.g. "units", "g", "min"'),
+          notes: z.string().optional().describe('Optional notes'),
+        }),
+        execute: async (args) => ({ ...args, status: 'pending_confirmation' }),
+      }),
     },
   })
 
-  return createUIMessageStreamResponse({ stream })
+  return result.toUIMessageStreamResponse()
 }

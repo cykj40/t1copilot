@@ -1,7 +1,7 @@
 'use client'
 
 import { useChat } from '@ai-sdk/react'
-import { DefaultChatTransport } from 'ai'
+import { DefaultChatTransport, getToolName, isToolUIPart } from 'ai'
 import { useEffect, useRef, useState } from 'react'
 import { MedicalDisclaimer } from '@/components/shared/MedicalDisclaimer'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -12,12 +12,56 @@ import { ChatMessage } from './ChatMessage'
 const SUGGESTED_PROMPTS = [
   "What's my glucose trend today?",
   "How did yesterday's ride affect my levels?",
-  'Am I in range this week?',
-  'Log 45g carbs at breakfast',
+  'Give me a weekly summary',
+  'Log 3 units rapid insulin',
 ]
 
 interface AgentChatProps {
   onArtifact: (artifact: ArtifactData) => void
+}
+
+function toolInputToArtifact(toolName: string, input: unknown): ArtifactData | null {
+  const args = input as Record<string, unknown>
+  switch (toolName) {
+    case 'render_glucose_chart':
+      return {
+        artifactType: 'render_glucose_chart',
+        timeRange: (args.timeRange as string | undefined) ?? '24h',
+        title: (args.title as string | undefined) ?? 'Glucose Trend',
+      }
+    case 'render_workout_correlation':
+      return {
+        artifactType: 'render_workout_correlation',
+        workoutId: (args.workoutId as string | undefined) ?? 'latest',
+        workoutName: (args.workoutName as string | undefined) ?? 'Last Workout',
+      }
+    case 'render_weekly_summary':
+      return {
+        artifactType: 'render_weekly_summary',
+        weekLabel: (args.weekLabel as string | undefined) ?? 'This Week',
+      }
+    case 'render_doctor_checklist': {
+      const apptDate = args.appointmentDate as string | undefined
+      return {
+        artifactType: 'render_doctor_checklist',
+        ...(typeof apptDate === 'string' ? { appointmentDate: apptDate } : {}),
+      }
+    }
+    case 'confirm_log_event': {
+      const eventType = args.eventType as 'insulin' | 'carbs' | 'exercise' | undefined
+      if (!eventType) return null
+      const noteVal = args.notes as string | undefined
+      return {
+        artifactType: 'confirm_log_event',
+        eventType,
+        value: (args.value as number | undefined) ?? 0,
+        unit: (args.unit as string | undefined) ?? '',
+        ...(typeof noteVal === 'string' ? { notes: noteVal } : {}),
+      }
+    }
+    default:
+      return null
+  }
 }
 
 export function AgentChat({ onArtifact }: AgentChatProps) {
@@ -27,14 +71,28 @@ export function AgentChat({ onArtifact }: AgentChatProps) {
 
   const { messages, sendMessage, status } = useChat<T1UIMessage>({
     transport: new DefaultChatTransport({ api: '/api/chat' }),
-    onData: (dataPart) => {
-      if (dataPart.type === 'data-artifact') {
-        onArtifact(dataPart.data as ArtifactData)
-      }
-    },
   })
 
   const isLoading = status === 'streaming' || status === 'submitted'
+
+  // Detect completed tool invocations and push to right panel
+  // biome-ignore lint/correctness/useExhaustiveDependencies: onArtifact is stable
+  useEffect(() => {
+    for (const msg of [...messages].reverse()) {
+      if (msg.role !== 'assistant') continue
+      for (const part of [...msg.parts].reverse()) {
+        if (!isToolUIPart(part)) continue
+        if (!('state' in part) || part.state !== 'output-available') continue
+        const name = getToolName(part)
+        const inputData = 'input' in part ? part.input : undefined
+        const artifact = toolInputToArtifact(name, inputData)
+        if (artifact) {
+          onArtifact(artifact)
+          return
+        }
+      }
+    }
+  }, [messages])
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on new message arrival
   useEffect(() => {

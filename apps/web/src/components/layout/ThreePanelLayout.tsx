@@ -12,7 +12,7 @@ interface ThreePanelLayoutProps {
   children: React.ReactNode
 }
 
-export function ThreePanelLayout({ children: _children }: ThreePanelLayoutProps) {
+export function ThreePanelLayout({ children }: ThreePanelLayoutProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [artifact, setArtifact] = useState<ArtifactData | null>(null)
   const [artifactOpen, setArtifactOpen] = useState(true)
@@ -48,7 +48,7 @@ export function ThreePanelLayout({ children: _children }: ThreePanelLayoutProps)
           />
         </ResizablePanel>
 
-        {/* ── RIGHT: Artifact panel ─────────────────────────────────────────── */}
+        {/* ── RIGHT: Context / Artifact panel ──────────────────────────────── */}
         {artifactOpen && (
           <>
             <ResizableHandle
@@ -56,7 +56,14 @@ export function ThreePanelLayout({ children: _children }: ThreePanelLayoutProps)
               className="bg-border hover:bg-primary/40 transition-colors"
             />
             <ResizablePanel defaultSize={32} minSize={0} maxSize={50}>
-              <ArtifactPanel artifact={artifact} onClose={() => setArtifactOpen(false)} />
+              <ArtifactPanel
+                artifact={artifact}
+                pageContent={children}
+                onClose={() => {
+                  setArtifactOpen(false)
+                  setArtifact(null)
+                }}
+              />
             </ResizablePanel>
           </>
         )}

@@ -1,5 +1,7 @@
 import type { UIMessage } from 'ai'
 
+// ── Legacy artifact types (kept for backward compat) ─────────────────────────
+
 export interface GlucoseChartArtifact {
   artifactType: 'glucose_chart'
   currentValue: number
@@ -24,7 +26,7 @@ export interface WorkoutCardArtifact {
   hypoRisk: 'low' | 'moderate' | 'high'
 }
 
-export interface EventLogArtifact {
+export interface EventLogConfirmationArtifact {
   artifactType: 'event_log_confirmation'
   eventType: 'insulin' | 'carbs' | 'exercise'
   details: string
@@ -38,15 +40,84 @@ export interface ParameterDisplayArtifact {
   basalUnitsPerDay: number
 }
 
+// ── Tool-call artifact types (new generative UI system) ───────────────────────
+
+export interface RenderGlucoseChartArtifact {
+  artifactType: 'render_glucose_chart'
+  timeRange: string
+  title: string
+}
+
+export interface RenderWorkoutCorrelationArtifact {
+  artifactType: 'render_workout_correlation'
+  workoutId: string
+  workoutName: string
+}
+
+export interface RenderWeeklySummaryArtifact {
+  artifactType: 'render_weekly_summary'
+  weekLabel: string
+}
+
+export interface RenderDoctorChecklistArtifact {
+  artifactType: 'render_doctor_checklist'
+  appointmentDate?: string
+}
+
+export interface ConfirmLogEventArtifact {
+  artifactType: 'confirm_log_event'
+  eventType: 'insulin' | 'carbs' | 'exercise'
+  value: number
+  unit: string
+  notes?: string
+}
+
 export type ArtifactData =
   | GlucoseChartArtifact
   | InsightCardArtifact
   | WorkoutCardArtifact
-  | EventLogArtifact
+  | EventLogConfirmationArtifact
   | ParameterDisplayArtifact
+  | RenderGlucoseChartArtifact
+  | RenderWorkoutCorrelationArtifact
+  | RenderWeeklySummaryArtifact
+  | RenderDoctorChecklistArtifact
+  | ConfirmLogEventArtifact
 
-export type T1DataTypes = {
-  artifact: ArtifactData
+// ── T1 tool types for useChat generic ────────────────────────────────────────
+
+export type T1Tools = {
+  render_glucose_chart: {
+    input: { timeRange: string; title: string }
+    output: { timeRange: string; title: string }
+  }
+  render_workout_correlation: {
+    input: { workoutId: string; workoutName: string }
+    output: { workoutId: string; workoutName: string }
+  }
+  render_weekly_summary: {
+    input: { weekLabel: string }
+    output: { weekLabel: string }
+  }
+  render_doctor_checklist: {
+    input: { appointmentDate?: string }
+    output: { appointmentDate?: string }
+  }
+  confirm_log_event: {
+    input: {
+      eventType: 'insulin' | 'carbs' | 'exercise'
+      value: number
+      unit: string
+      notes?: string
+    }
+    output: {
+      eventType: 'insulin' | 'carbs' | 'exercise'
+      value: number
+      unit: string
+      notes?: string
+      status: string
+    }
+  }
 }
 
-export type T1UIMessage = UIMessage<unknown, T1DataTypes>
+export type T1UIMessage = UIMessage<unknown, Record<string, never>, T1Tools>
