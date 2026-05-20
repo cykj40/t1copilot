@@ -3,6 +3,8 @@
 import {
   Activity,
   Brain,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
   Dumbbell,
   FlaskConical,
@@ -34,13 +36,17 @@ const NAV_ITEMS: NavItem[] = [
 
 interface AppSidebarProps {
   collapsed: boolean
+  onToggle: () => void
 }
 
-export function AppSidebar({ collapsed }: AppSidebarProps) {
+export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
   const pathname = usePathname()
 
   return (
-    <div className="flex h-full flex-col bg-sidebar border-r border-sidebar-border">
+    <div
+      style={{ width: collapsed ? '52px' : '200px', transition: 'width 200ms ease' }}
+      className="h-full flex flex-col bg-sidebar border-r border-sidebar-border overflow-hidden shrink-0"
+    >
       {/* Logo */}
       <div className="flex h-12 items-center gap-2.5 px-4 border-b border-sidebar-border shrink-0">
         <span className="flex h-6 w-6 items-center justify-center rounded bg-primary text-[10px] font-bold text-primary-foreground shrink-0">
@@ -86,7 +92,22 @@ export function AppSidebar({ collapsed }: AppSidebarProps) {
       </nav>
 
       <Separator className="bg-sidebar-border" />
-      <AgentStatusBar />
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex items-center gap-2 mx-2 mb-2 px-2 py-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors text-xs w-[calc(100%-16px)]"
+        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      >
+        {collapsed ? (
+          <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+        ) : (
+          <>
+            <ChevronLeft className="h-3.5 w-3.5 shrink-0" />
+            <span>Collapse</span>
+          </>
+        )}
+      </button>
+      {!collapsed && <AgentStatusBar />}
     </div>
   )
 }
