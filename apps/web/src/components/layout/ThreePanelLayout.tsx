@@ -8,14 +8,9 @@ import type { ArtifactData } from '@/types/artifacts'
 import { AppSidebar } from './AppSidebar'
 import { ArtifactPanel } from './ArtifactPanel'
 
-interface ThreePanelLayoutProps {
-  children: React.ReactNode
-}
-
-export function ThreePanelLayout({ children }: ThreePanelLayoutProps) {
+export function ThreePanelLayout() {
   const [collapsed, setCollapsed] = useState(false)
   const [artifact, setArtifact] = useState<ArtifactData | null>(null)
-  const [artifactOpen, setArtifactOpen] = useState(true)
 
   function handleSidebarResize(size: PanelSize) {
     setCollapsed(size.asPercentage <= 5)
@@ -38,32 +33,20 @@ export function ThreePanelLayout({ children }: ThreePanelLayoutProps) {
 
         <ResizableHandle withHandle className="bg-border hover:bg-primary/40 transition-colors" />
 
-        {/* ── CENTER: Agent chat workspace ─────────────────────────────────── */}
-        <ResizablePanel defaultSize={artifactOpen ? 50 : 82} minSize={35}>
-          <AgentChat
-            onArtifact={(a) => {
-              setArtifact(a)
-              setArtifactOpen(true)
-            }}
-          />
+        {/* ── CENTER: Agent chat — always visible ──────────────────────────── */}
+        <ResizablePanel defaultSize={82} minSize={35}>
+          <AgentChat onArtifact={setArtifact} />
         </ResizablePanel>
 
-        {/* ── RIGHT: Context / Artifact panel ──────────────────────────────── */}
-        {artifactOpen && (
+        {/* ── RIGHT: Artifact panel — only mounts when agent produces output ─ */}
+        {artifact !== null && (
           <>
             <ResizableHandle
               withHandle
               className="bg-border hover:bg-primary/40 transition-colors"
             />
-            <ResizablePanel defaultSize={32} minSize={0} maxSize={50}>
-              <ArtifactPanel
-                artifact={artifact}
-                pageContent={children}
-                onClose={() => {
-                  setArtifactOpen(false)
-                  setArtifact(null)
-                }}
-              />
+            <ResizablePanel defaultSize={35} minSize={20} maxSize={55}>
+              <ArtifactPanel artifact={artifact} onClose={() => setArtifact(null)} />
             </ResizablePanel>
           </>
         )}
