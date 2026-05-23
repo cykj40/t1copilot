@@ -1,12 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useGroupRef } from 'react-resizable-panels'
+import { useRef, useState } from 'react'
 import { AgentChat } from '@/components/chat/AgentChat'
 import { ArtifactPanel } from '@/components/layout/ArtifactPanel'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { useConversations } from '@/hooks/useConversations'
-import { cn } from '@/lib/utils'
 import type { ArtifactData } from '@/types/artifacts'
 import { AppSidebar } from './AppSidebar'
 
@@ -20,37 +18,52 @@ export function ThreePanelLayout({ children, dexcomConnected }: ThreePanelLayout
   const [artifact, setArtifact] = useState<ArtifactData | null>(null)
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
   const [chatKey, setChatKey] = useState('new')
-  const groupRef = useGroupRef()
+
+  // react-resizable-panels only reads defaultSize on initial render of each panel.
+  // Remount the group the first time an artifact opens so defaultSize applies (60/40).
+  // After that, user drag controls layout until close.
+  const [panelGroupKey, setPanelGroupKey] = useState('initial')
+  const artifactWasShown = useRef(false)
+
   const { conversations, createConversation, updateConversation, deleteConversation } =
     useConversations()
 
-  const showArtifact = artifact !== null
+  function handleArtifact(newArtifact: ArtifactData) {
+    if (!artifactWasShown.current) {
+      artifactWasShown.current = true
+      setPanelGroupKey('with-artifact')
+    }
+    setArtifact(newArtifact)
+  }
 
-  // defaultSize only applies on mount — push layout when artifact opens/closes
-  useEffect(() => {
-    groupRef.current?.setLayout(
-      showArtifact ? { main: 62, artifact: 38 } : { main: 100, artifact: 0 },
-    )
-  }, [showArtifact, groupRef])
+  function handleCloseArtifact() {
+    setArtifact(null)
+    artifactWasShown.current = false
+    setPanelGroupKey('initial')
+  }
 
   function handleNewConversation() {
     setActiveConversationId(null)
     setArtifact(null)
+    artifactWasShown.current = false
+    setPanelGroupKey('initial')
     setChatKey(`new-${crypto.randomUUID()}`)
   }
 
   function handleSelectConversation(id: string) {
     setActiveConversationId(id)
     setArtifact(null)
+    artifactWasShown.current = false
+    setPanelGroupKey('initial')
     setChatKey(id)
   }
 
   function handleDeleteConversation(id: string) {
     deleteConversation(id)
-    if (id === activeConversationId) {
-      handleNewConversation()
-    }
+    if (id === activeConversationId) handleNewConversation()
   }
+
+  const showArtifact = artifact !== null
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -64,13 +77,9 @@ export function ThreePanelLayout({ children, dexcomConnected }: ThreePanelLayout
         onSelectConversation={handleSelectConversation}
         onDeleteConversation={handleDeleteConversation}
       />
-      <ResizablePanelGroup
-        groupRef={groupRef}
-        orientation="horizontal"
-        className="flex-1 min-w-0"
-        defaultLayout={{ main: 100, artifact: 0 }}
-      >
-        <ResizablePanel id="main" defaultSize={100} minSize={35}>
+
+      <ResizablePanelGroup key={panelGroupKey} orientation="horizontal" className="flex-1 min-w-0">
+        <ResizablePanel defaultSize={showArtifact ? 60 : 100} minSize={30}>
           <div className="flex h-full flex-col overflow-hidden">
             {children && (
               <div className="border-b border-border overflow-y-auto max-h-[55%]">{children}</div>
@@ -78,7 +87,7 @@ export function ThreePanelLayout({ children, dexcomConnected }: ThreePanelLayout
             <div className="flex-1 min-h-0">
               <AgentChat
                 key={chatKey}
-                onArtifact={setArtifact}
+                onArtifact={handleArtifact}
                 conversationId={activeConversationId}
                 onFirstMessage={(text) => {
                   const id = createConversation(text)
@@ -91,25 +100,17 @@ export function ThreePanelLayout({ children, dexcomConnected }: ThreePanelLayout
           </div>
         </ResizablePanel>
 
-        <ResizableHandle
-          withHandle
-          className={cn(
-            'bg-border hover:bg-primary/40 transition-colors',
-            !showArtifact && 'hidden',
-          )}
-        />
-
-        <ResizablePanel
-          id="artifact"
-          defaultSize={0}
-          minSize={showArtifact ? 25 : 0}
-          maxSize={55}
-          className={!showArtifact ? 'hidden' : ''}
-        >
-          {artifact !== null && (
-            <ArtifactPanel artifact={artifact} onClose={() => setArtifact(null)} />
-          )}
-        </ResizablePanel>
+        {showArtifact && (
+          <>
+            <ResizableHandle
+              withHandle
+              className="bg-border hover:bg-primary/40 transition-colors"
+            />
+            <ResizablePanel defaultSize={40} minSize={20} maxSize={70}>
+              <ArtifactPanel artifact={artifact} onClose={handleCloseArtifact} />
+            </ResizablePanel>
+          </>
+        )}
       </ResizablePanelGroup>
     </div>
   )
