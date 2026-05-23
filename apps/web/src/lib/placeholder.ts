@@ -1,17 +1,3 @@
-import type { TrendArrow } from '@t1copilot/types'
-
-export const PLACEHOLDER_GLUCOSE = {
-  value: 142,
-  trend: 'FORTY_FIVE_UP' as TrendArrow,
-  timestamp: new Date(Date.now() - 5 * 60_000).toISOString(),
-  unit: 'mg/dL',
-}
-
-export const PLACEHOLDER_TIR = {
-  percent: 74,
-  period: 'Last 7 days',
-}
-
 export const PLACEHOLDER_LAST_WORKOUT = {
   name: 'Cycling',
   durationMinutes: 45,

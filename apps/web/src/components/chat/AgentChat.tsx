@@ -5,7 +5,12 @@ import { DefaultChatTransport, getToolName, isToolUIPart } from 'ai'
 import { useEffect, useRef, useState } from 'react'
 import { MedicalDisclaimer } from '@/components/shared/MedicalDisclaimer'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import type { ArtifactData, T1UIMessage } from '@/types/artifacts'
+import type {
+  ArtifactData,
+  GlucoseChartReading,
+  GlucoseChartStatistics,
+  T1UIMessage,
+} from '@/types/artifacts'
 import { ChatInput } from './ChatInput'
 import { ChatMessage } from './ChatMessage'
 
@@ -20,42 +25,53 @@ interface AgentChatProps {
   onArtifact: (artifact: ArtifactData) => void
 }
 
-function toolInputToArtifact(toolName: string, input: unknown): ArtifactData | null {
-  const args = input as Record<string, unknown>
+function toolResultToArtifact(
+  toolName: string,
+  input: unknown,
+  output: unknown,
+): ArtifactData | null {
+  const inp = input as Record<string, unknown>
+  const out = output as Record<string, unknown> | null | undefined
   switch (toolName) {
     case 'render_glucose_chart':
       return {
         artifactType: 'render_glucose_chart',
-        timeRange: (args.timeRange as string | undefined) ?? '24h',
-        title: (args.title as string | undefined) ?? 'Glucose Trend',
+        timeRange: (inp.timeRange as string | undefined) ?? '24h',
+        title: (inp.title as string | undefined) ?? 'Glucose Trend',
+        ...(Array.isArray(out?.readings)
+          ? { readings: out.readings as GlucoseChartReading[] }
+          : {}),
+        ...(out?.statistics !== null && out?.statistics !== undefined
+          ? { statistics: out.statistics as GlucoseChartStatistics }
+          : {}),
       }
     case 'render_workout_correlation':
       return {
         artifactType: 'render_workout_correlation',
-        workoutId: (args.workoutId as string | undefined) ?? 'latest',
-        workoutName: (args.workoutName as string | undefined) ?? 'Last Workout',
+        workoutId: (inp.workoutId as string | undefined) ?? 'latest',
+        workoutName: (inp.workoutName as string | undefined) ?? 'Last Workout',
       }
     case 'render_weekly_summary':
       return {
         artifactType: 'render_weekly_summary',
-        weekLabel: (args.weekLabel as string | undefined) ?? 'This Week',
+        weekLabel: (inp.weekLabel as string | undefined) ?? 'This Week',
       }
     case 'render_doctor_checklist': {
-      const apptDate = args.appointmentDate as string | undefined
+      const apptDate = inp.appointmentDate as string | undefined
       return {
         artifactType: 'render_doctor_checklist',
         ...(typeof apptDate === 'string' ? { appointmentDate: apptDate } : {}),
       }
     }
     case 'confirm_log_event': {
-      const eventType = args.eventType as 'insulin' | 'carbs' | 'exercise' | undefined
+      const eventType = inp.eventType as 'insulin' | 'carbs' | 'exercise' | undefined
       if (!eventType) return null
-      const noteVal = args.notes as string | undefined
+      const noteVal = inp.notes as string | undefined
       return {
         artifactType: 'confirm_log_event',
         eventType,
-        value: (args.value as number | undefined) ?? 0,
-        unit: (args.unit as string | undefined) ?? '',
+        value: (inp.value as number | undefined) ?? 0,
+        unit: (inp.unit as string | undefined) ?? '',
         ...(typeof noteVal === 'string' ? { notes: noteVal } : {}),
       }
     }
@@ -85,7 +101,8 @@ export function AgentChat({ onArtifact }: AgentChatProps) {
         if (!('state' in part) || part.state !== 'output-available') continue
         const name = getToolName(part)
         const inputData = 'input' in part ? part.input : undefined
-        const artifact = toolInputToArtifact(name, inputData)
+        const outputData = 'output' in part ? part.output : undefined
+        const artifact = toolResultToArtifact(name, inputData, outputData)
         if (artifact) {
           onArtifact(artifact)
           return

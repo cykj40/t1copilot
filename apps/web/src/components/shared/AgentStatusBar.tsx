@@ -9,18 +9,26 @@ const AGENTS: AgentStatus[] = [
   { name: 'Insight', active: true },
 ]
 
-const MCP_SERVERS: McpServer[] = [
-  { name: 'Dexcom', status: 'disconnected', url: 'https://dexcom-mcp-server.fly.dev' },
-  { name: 'Peloton', status: 'disconnected', url: 'https://peloton-mcp-server.fly.dev' },
-]
-
 const STATUS_COLORS: Record<string, string> = {
   connected: '#22c55e',
   disconnected: '#6b6b6b',
   error: '#ef4444',
 }
 
-export function AgentStatusBar() {
+interface AgentStatusBarProps {
+  dexcomConnected?: boolean
+}
+
+export function AgentStatusBar({ dexcomConnected = false }: AgentStatusBarProps) {
+  const MCP_SERVERS: McpServer[] = [
+    {
+      name: 'Dexcom',
+      status: dexcomConnected ? 'connected' : 'disconnected',
+      url: 'https://dexcom-mcp-server.fly.dev',
+    },
+    { name: 'Peloton', status: 'disconnected', url: 'https://peloton-mcp-server.fly.dev' },
+  ]
+
   return (
     <div className="flex flex-col gap-2 p-3">
       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Agents</p>
@@ -45,7 +53,6 @@ export function AgentStatusBar() {
         ))}
       </div>
 
-      {/* MCP server status — Dexcom & Peloton */}
       <div className="flex flex-col gap-1 mt-1">
         <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
           MCP Servers

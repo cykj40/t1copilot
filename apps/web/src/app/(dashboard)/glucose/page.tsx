@@ -1,16 +1,31 @@
+export const dynamic = 'force-dynamic'
+
 import { GlucoseCard } from '@/components/glucose/GlucoseCard'
-import { TrendChart } from '@/components/glucose/TrendChart'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { PLACEHOLDER_GLUCOSE } from '@/lib/placeholder'
+import { Card, CardContent } from '@/components/ui/card'
+import { getDailySummary, getGlucoseRange, mapDexcomTrend } from '@/lib/dexcom-mcp'
+import { GlucoseHistoryClient } from './GlucoseHistoryClient'
 
-const DATE_RANGES = ['24h', '7d', '14d', '30d'] as const
+export default async function GlucosePage() {
+  const now = new Date()
+  const start24h = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
 
-const MOCK_TREND = Array.from({ length: 48 }, (_, i) => ({
-  time: `${String(Math.floor(i / 2))}:${i % 2 === 0 ? '00' : '30'}`,
-  value: 115 + Math.sin(i * 0.6) * 35 + Math.random() * 10,
-}))
+  const [rangeResult, dailyResult] = await Promise.allSettled([
+    getGlucoseRange(start24h, now.toISOString()),
+    getDailySummary(),
+  ])
 
-export default function GlucosePage() {
+  if (rangeResult.status === 'rejected') {
+    console.error('[GlucosePage] getGlucoseRange failed:', rangeResult.reason)
+  }
+  if (dailyResult.status === 'rejected') {
+    console.error('[GlucosePage] getDailySummary failed:', dailyResult.reason)
+  }
+
+  const range = rangeResult.status === 'fulfilled' ? rangeResult.value : null
+  const daily = dailyResult.status === 'fulfilled' ? dailyResult.value : null
+
+  const latest = range?.readings.at(-1)
+
   return (
     <div className="flex flex-col gap-4 p-4 overflow-y-auto">
       <div>
@@ -18,58 +33,62 @@ export default function GlucosePage() {
         <p className="text-xs text-muted-foreground mt-0.5">CGM data and trend analysis.</p>
       </div>
 
-      {/* Date range selector (placeholder — no interactivity yet) */}
-      <div className="flex gap-1">
-        {DATE_RANGES.map((range, i) => (
-          <span
-            key={range}
-            className="rounded-md px-3 py-1 text-xs font-medium transition-colors"
-            style={{
-              backgroundColor: i === 0 ? '#1a1a1e' : 'transparent',
-              color: i === 0 ? '#e5e5e5' : '#6b6b6b',
-              border: '1px solid',
-              borderColor: i === 0 ? '#3a3a3e' : 'transparent',
-            }}
-          >
-            {range}
-          </span>
-        ))}
-      </div>
-
       <GlucoseCard
-        value={PLACEHOLDER_GLUCOSE.value}
-        trend={PLACEHOLDER_GLUCOSE.trend}
-        timestamp={PLACEHOLDER_GLUCOSE.timestamp}
+        value={latest?.value ?? null}
+        trend={latest ? mapDexcomTrend(latest.trend) : null}
+        timestamp={latest?.timestamp ?? null}
+        {...(rangeResult.status === 'rejected' ? { error: 'CGM offline' } : {})}
       />
 
-      {/* Main chart placeholder */}
-      <Card className="bg-card border-border">
-        <CardHeader className="pb-1 pt-3 px-4">
-          <p className="text-xs text-muted-foreground">Glucose trend — last 24h</p>
-        </CardHeader>
-        <CardContent className="px-4 pb-3">
-          <TrendChart data={MOCK_TREND} height={200} />
-        </CardContent>
-      </Card>
+      {/* Interactive chart — client component handles date range switching */}
+      <GlucoseHistoryClient initialReadings={range?.readings ?? []} />
 
-      {/* Stats row */}
-      <div className="grid grid-cols-3 gap-2">
-        {[
-          { label: 'Average', value: '138', unit: 'mg/dL' },
-          { label: 'High', value: '214', unit: 'mg/dL' },
-          { label: 'Low', value: '68', unit: 'mg/dL' },
-        ].map((stat) => (
-          <Card key={stat.label} className="bg-card border-border">
-            <CardContent className="pt-3 pb-2 px-3">
-              <p className="text-[10px] text-muted-foreground mb-0.5">{stat.label}</p>
-              <div className="flex items-baseline gap-0.5">
-                <span className="text-lg font-bold tabular-nums text-foreground">{stat.value}</span>
-                <span className="text-[10px] text-muted-foreground">{stat.unit}</span>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* Today's stats */}
+      {daily && (
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: 'Average', value: String(daily.statistics.average), unit: 'mg/dL' },
+            { label: 'High', value: String(daily.statistics.max), unit: 'mg/dL' },
+            { label: 'Low', value: String(daily.statistics.min), unit: 'mg/dL' },
+          ].map((stat) => (
+            <Card key={stat.label} className="bg-card border-border">
+              <CardContent className="pt-3 pb-2 px-3">
+                <p className="text-[10px] text-muted-foreground mb-0.5">{stat.label}</p>
+                <div className="flex items-baseline gap-0.5">
+                  <span className="text-lg font-bold tabular-nums text-foreground">
+                    {stat.value}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">{stat.unit}</span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {daily && (
+        <Card className="bg-card border-border">
+          <CardContent className="pt-4 pb-3 px-4">
+            <p className="text-xs text-muted-foreground mb-1">Time in Range (today)</p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-3xl font-bold text-[#22c55e] tabular-nums">
+                {String(daily.statistics.timeInRange)}
+              </span>
+              <span className="text-sm text-muted-foreground">%</span>
+            </div>
+            <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-[#22c55e]"
+                style={{ width: `${String(daily.statistics.timeInRange)}%` }}
+              />
+            </div>
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              {String(daily.statistics.readingCount)} readings · CV{' '}
+              {String(daily.statistics.coefficientOfVariation)}%
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

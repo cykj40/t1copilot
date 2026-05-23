@@ -1,7 +1,16 @@
-import { ThreePanelLayout } from '@/components/layout/ThreePanelLayout'
+export const dynamic = 'force-dynamic'
 
-// Next.js requires layouts to receive children, but the three-panel shell
-// owns its own rendering — route pages exist for URL routing only.
-export default function DashboardLayout({ children: _children }: { children: React.ReactNode }) {
-  return <ThreePanelLayout />
+import { ThreePanelLayout } from '@/components/layout/ThreePanelLayout'
+import { getLatestGlucose } from '@/lib/dexcom-mcp'
+
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  let dexcomConnected = false
+  try {
+    await getLatestGlucose()
+    dexcomConnected = true
+  } catch {
+    // Dexcom MCP unreachable — degrade gracefully
+  }
+
+  return <ThreePanelLayout dexcomConnected={dexcomConnected}>{children}</ThreePanelLayout>
 }

@@ -1,6 +1,7 @@
 import { anthropic } from '@ai-sdk/anthropic'
 import { convertToModelMessages, streamText, tool } from 'ai'
 import { z } from 'zod'
+import { getGlucoseRange } from '@/lib/dexcom-mcp'
 import type { T1UIMessage } from '@/types/artifacts'
 
 const SYSTEM_PROMPT = `You are T1Copilot, an AI assistant specialized in Type 1 diabetes management.
@@ -34,7 +35,23 @@ export async function POST(req: Request): Promise<Response> {
           timeRange: z.string().describe('Time range, e.g. "24h" or "7d"'),
           title: z.string().describe('Chart title'),
         }),
-        execute: async ({ timeRange, title }) => ({ timeRange, title }),
+        execute: async ({ timeRange, title }) => {
+          const now = new Date()
+          const msBack = timeRange === '7d' ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000
+          const start = new Date(now.getTime() - msBack).toISOString()
+          try {
+            const range = await getGlucoseRange(start, now.toISOString())
+            return {
+              timeRange,
+              title,
+              readings: range.readings,
+              statistics: range.statistics,
+            }
+          } catch (error) {
+            console.error('[render_glucose_chart] MCP call failed:', error)
+            return { timeRange, title, readings: [], statistics: null }
+          }
+        },
       }),
       render_workout_correlation: tool({
         description: 'Render a workout glucose correlation artifact in the right panel',

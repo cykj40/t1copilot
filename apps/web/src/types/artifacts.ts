@@ -42,10 +42,30 @@ export interface ParameterDisplayArtifact {
 
 // ── Tool-call artifact types (new generative UI system) ───────────────────────
 
+export interface GlucoseChartReading {
+  value: number
+  trend: string
+  timestamp: string
+}
+
+export interface GlucoseChartStatistics {
+  average: number
+  min: number
+  max: number
+  timeInRange: number
+  timeBelowRange: number
+  timeAboveRange: number
+  readingCount: number
+  standardDeviation: number
+  coefficientOfVariation: number
+}
+
 export interface RenderGlucoseChartArtifact {
   artifactType: 'render_glucose_chart'
   timeRange: string
   title: string
+  readings?: GlucoseChartReading[]
+  statistics?: GlucoseChartStatistics
 }
 
 export interface RenderWorkoutCorrelationArtifact {
@@ -89,7 +109,12 @@ export type ArtifactData =
 export type T1Tools = {
   render_glucose_chart: {
     input: { timeRange: string; title: string }
-    output: { timeRange: string; title: string }
+    output: {
+      timeRange: string
+      title: string
+      readings: GlucoseChartReading[]
+      statistics: GlucoseChartStatistics
+    }
   }
   render_workout_correlation: {
     input: { workoutId: string; workoutName: string }

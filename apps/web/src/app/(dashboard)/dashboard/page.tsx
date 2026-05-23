@@ -1,13 +1,10 @@
+export const dynamic = 'force-dynamic'
+
 import { GlucoseCard } from '@/components/glucose/GlucoseCard'
-import { TrendChart } from '@/components/glucose/TrendChart'
 import { InsightFeed } from '@/components/insights/InsightFeed'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { PLACEHOLDER_GLUCOSE, PLACEHOLDER_RECENT_EVENTS, PLACEHOLDER_TIR } from '@/lib/placeholder'
-
-const MOCK_TREND = Array.from({ length: 24 }, (_, i) => ({
-  time: `${String(i)}:00`,
-  value: 120 + Math.sin(i * 0.8) * 30 + (i > 18 ? -15 : 0),
-}))
+import { getDailySummary, getLatestGlucose, mapDexcomTrend } from '@/lib/dexcom-mcp'
+import { PLACEHOLDER_RECENT_EVENTS } from '@/lib/placeholder'
 
 const EVENT_ICONS: Record<string, string> = {
   insulin: '💉',
@@ -15,7 +12,24 @@ const EVENT_ICONS: Record<string, string> = {
   exercise: '🏃',
 }
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const [latestResult, dailyResult] = await Promise.allSettled([
+    getLatestGlucose(),
+    getDailySummary(),
+  ])
+
+  const latest = latestResult.status === 'fulfilled' ? latestResult.value : null
+  const daily = dailyResult.status === 'fulfilled' ? dailyResult.value : null
+
+  if (latestResult.status === 'rejected') {
+    console.error('[Dashboard] getLatestGlucose failed:', latestResult.reason)
+  }
+  if (dailyResult.status === 'rejected') {
+    console.error('[Dashboard] getDailySummary failed:', dailyResult.reason)
+  }
+
+  const tir = daily?.statistics.timeInRange ?? null
+
   return (
     <div className="flex flex-col gap-4 p-4 overflow-y-auto">
       <div>
@@ -26,9 +40,10 @@ export default function DashboardPage() {
       </div>
 
       <GlucoseCard
-        value={PLACEHOLDER_GLUCOSE.value}
-        trend={PLACEHOLDER_GLUCOSE.trend}
-        timestamp={PLACEHOLDER_GLUCOSE.timestamp}
+        value={latest?.value ?? null}
+        trend={latest ? mapDexcomTrend(latest.trend) : null}
+        timestamp={latest?.timestamp ?? null}
+        {...(latestResult.status === 'rejected' ? { error: 'CGM offline' } : {})}
       />
 
       {/* Time in range */}
@@ -37,29 +52,42 @@ export default function DashboardPage() {
           <p className="text-xs text-muted-foreground mb-1">Time in Range</p>
           <div className="flex items-baseline gap-1">
             <span className="text-3xl font-bold text-[#22c55e] tabular-nums">
-              {String(PLACEHOLDER_TIR.percent)}
+              {tir !== null ? String(tir) : '—'}
             </span>
-            <span className="text-sm text-muted-foreground">%</span>
+            {tir !== null && <span className="text-sm text-muted-foreground">%</span>}
           </div>
           <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
             <div
               className="h-full rounded-full bg-[#22c55e]"
-              style={{ width: `${String(PLACEHOLDER_TIR.percent)}%` }}
+              style={{ width: tir !== null ? `${String(tir)}%` : '0%' }}
             />
           </div>
-          <p className="mt-1.5 text-[11px] text-muted-foreground">{PLACEHOLDER_TIR.period}</p>
+          <p className="mt-1.5 text-[11px] text-muted-foreground">Today</p>
         </CardContent>
       </Card>
 
-      {/* 24h trend */}
-      <Card className="bg-card border-border">
-        <CardHeader className="pb-1 pt-3 px-4">
-          <p className="text-xs text-muted-foreground">24h trend</p>
-        </CardHeader>
-        <CardContent className="px-4 pb-3">
-          <TrendChart data={MOCK_TREND} height={120} />
-        </CardContent>
-      </Card>
+      {/* Today's stats strip */}
+      {daily && (
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: 'Average', value: String(daily.statistics.average), unit: 'mg/dL' },
+            { label: 'High', value: String(daily.statistics.max), unit: 'mg/dL' },
+            { label: 'Low', value: String(daily.statistics.min), unit: 'mg/dL' },
+          ].map((stat) => (
+            <Card key={stat.label} className="bg-card border-border">
+              <CardContent className="pt-3 pb-2 px-3">
+                <p className="text-[10px] text-muted-foreground mb-0.5">{stat.label}</p>
+                <div className="flex items-baseline gap-0.5">
+                  <span className="text-lg font-bold tabular-nums text-foreground">
+                    {stat.value}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">{stat.unit}</span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Recent events */}
       <Card className="bg-card border-border">

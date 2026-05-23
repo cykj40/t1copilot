@@ -37,9 +37,10 @@ const NAV_ITEMS: NavItem[] = [
 interface AppSidebarProps {
   collapsed: boolean
   onToggle: () => void
+  dexcomConnected: boolean
 }
 
-export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
+export function AppSidebar({ collapsed, onToggle, dexcomConnected }: AppSidebarProps) {
   const pathname = usePathname()
 
   return (
@@ -107,7 +108,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
           </>
         )}
       </button>
-      {!collapsed && <AgentStatusBar />}
+      {!collapsed && <AgentStatusBar dexcomConnected={dexcomConnected} />}
     </div>
   )
 }

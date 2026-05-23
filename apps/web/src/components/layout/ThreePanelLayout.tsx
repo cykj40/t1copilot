@@ -7,7 +7,12 @@ import type { ArtifactData } from '@/types/artifacts'
 import { AppSidebar } from './AppSidebar'
 import { ArtifactPanel } from './ArtifactPanel'
 
-export function ThreePanelLayout() {
+interface ThreePanelLayoutProps {
+  children?: React.ReactNode
+  dexcomConnected: boolean
+}
+
+export function ThreePanelLayout({ children, dexcomConnected }: ThreePanelLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [artifact, setArtifact] = useState<ArtifactData | null>(null)
 
@@ -16,10 +21,18 @@ export function ThreePanelLayout() {
       <AppSidebar
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
+        dexcomConnected={dexcomConnected}
       />
       <ResizablePanelGroup orientation="horizontal" className="flex-1 min-w-0">
         <ResizablePanel defaultSize={100} minSize={40}>
-          <AgentChat onArtifact={(a) => setArtifact(a)} />
+          <div className="flex h-full flex-col overflow-hidden">
+            {children && (
+              <div className="border-b border-border overflow-y-auto max-h-[55%]">{children}</div>
+            )}
+            <div className="flex-1 min-h-0">
+              <AgentChat onArtifact={(a) => setArtifact(a)} />
+            </div>
+          </div>
         </ResizablePanel>
         {artifact !== null && (
           <>

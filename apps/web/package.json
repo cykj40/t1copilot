@@ -7,12 +7,17 @@
     "build": "next build",
     "start": "next start",
     "lint": "biome check src",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:safety": "vitest run src/__tests__/safety"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.78",
     "@ai-sdk/react": "^3.0.186",
     "@base-ui/react": "^1.4.1",
+    "@t1copilot/mcp-clients": "workspace:*",
     "@t1copilot/types": "workspace:*",
     "@t1copilot/utils": "workspace:*",
     "ai": "^6.0.184",
@@ -34,7 +39,10 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@vitest/coverage-v8": "^4.1.7",
+    "msw": "^2.14.6",
     "tailwindcss": "^4.1.4",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.7"
   }
 }

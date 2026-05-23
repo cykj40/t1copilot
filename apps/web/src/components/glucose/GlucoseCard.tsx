@@ -4,9 +4,10 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 
 interface GlucoseCardProps {
-  value: number
-  trend: TrendArrow
-  timestamp: string
+  value: number | null
+  trend: TrendArrow | null
+  timestamp: string | null
+  error?: string
 }
 
 const TREND_ARROWS: Record<TrendArrow, string> = {
@@ -58,7 +59,18 @@ function relativeTime(iso: string): string {
   return `${String(hrs)}h ago`
 }
 
-export function GlucoseCard({ value, trend, timestamp }: GlucoseCardProps) {
+export function GlucoseCard({ value, trend, timestamp, error }: GlucoseCardProps) {
+  if (value === null || trend === null || timestamp === null) {
+    return (
+      <Card className="bg-card border-border opacity-60">
+        <CardContent className="pt-4 pb-3 px-4">
+          <p className="text-xs text-muted-foreground mb-1">Current Glucose</p>
+          <p className="text-sm text-muted-foreground">{error ?? 'CGM offline'}</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
   const zone = classifyGlucose(value)
   const colors = ZONE_COLORS[zone]
 
