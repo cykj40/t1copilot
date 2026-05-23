@@ -21,8 +21,7 @@ export async function getWorkouts(): Promise<PelotonServerWorkout[]> {
       json_response: true,
     })
     const workouts = extractJson<PelotonServerWorkout[]>(response)
-    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
-    return workouts.filter((w) => w.start_time * 1000 >= sevenDaysAgo)
+    return workouts
   } catch (err) {
     if (err instanceof PelotonMcpError) {
       console.error(`[getWorkouts] Peloton MCP error (${String(err.statusCode)}):`, err.message)
