@@ -22,7 +22,7 @@ export async function getWorkouts(): Promise<WorkoutCorrelation[]> {
 export async function getDisciplineInsights(): Promise<DisciplineInsight[]> {
   noStore()
   try {
-    const response = await callPelotonTool('peloton_get_discipline_insights', { format: 'summary' })
+    const response = await callPelotonTool('peloton_get_discipline_insights', {})
     return extractJson<DisciplineInsight[]>(response)
   } catch (err) {
     if (err instanceof PelotonMcpError) {

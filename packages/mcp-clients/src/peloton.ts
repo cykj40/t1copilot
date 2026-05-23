@@ -22,15 +22,13 @@ export type PelotonToolName = (typeof PELOTON_TOOL_NAMES)[number]
 
 // ── Input schemas (one per tool) ──────────────────────────────────────────────
 
-const PelotonGetWorkoutsSchema = z.object({
-  limit: z.number().int().min(1).max(100).default(20),
-  page: z.number().int().min(0).default(0),
-  sort_by: z.enum(['-created_at']).default('-created_at'),
-})
+const PelotonGetWorkoutsSchema = z
+  .object({
+    limit: z.number().int().min(1).max(100).default(20),
+  })
+  .strict()
 
-const PelotonGetDisciplineInsightsSchema = z.object({
-  format: z.enum(['summary', 'detailed']).default('summary'),
-})
+const PelotonGetDisciplineInsightsSchema = z.object({}).strict()
 
 const PelotonDetectHypoglycemiaRiskSchema = z.object({
   lookback_hours: z.number().int().min(1).max(72).default(48),

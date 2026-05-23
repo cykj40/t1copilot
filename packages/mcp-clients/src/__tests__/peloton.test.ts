@@ -24,7 +24,7 @@ describe('peloton_get_workouts', () => {
     expect(data[1]?.discipline).toBe('Running')
   })
 
-  it('default coercion — limit defaults to 20, page to 0, sort_by to -created_at', async () => {
+  it('default coercion — limit defaults to 20', async () => {
     const response = await callPelotonTool('peloton_get_workouts', {})
     expect(response.content).toHaveLength(1)
     expect(extractJson(response)).toEqual(MOCK_WORKOUTS)
@@ -42,6 +42,12 @@ describe('peloton_get_workouts', () => {
   it('rejects limit < 1', async () => {
     await expect(callPelotonTool('peloton_get_workouts', { limit: 0 })).rejects.toThrow()
   })
+
+  it('rejects fields not accepted by the server schema', async () => {
+    await expect(
+      callPelotonTool('peloton_get_workouts', { limit: 10, page: 0 } as never),
+    ).rejects.toThrow()
+  })
 })
 
 // ── peloton_get_discipline_insights ──────────────────────────────────────────
@@ -54,16 +60,15 @@ describe('peloton_get_discipline_insights', () => {
     expect(data[0]?.discipline).toBe('Cycling')
   })
 
-  it('default coercion — format defaults to summary', async () => {
+  it('sends no arguments for discipline insights', async () => {
     const response = await callPelotonTool('peloton_get_discipline_insights', {})
     expect(extractJson(response)).toEqual(MOCK_DISCIPLINE_INSIGHTS)
   })
 
-  it('accepts explicit format=detailed', async () => {
-    const response = await callPelotonTool('peloton_get_discipline_insights', {
-      format: 'detailed',
-    })
-    expect(extractJson(response)).toEqual(MOCK_DISCIPLINE_INSIGHTS)
+  it('rejects format because the server schema does not accept it', async () => {
+    await expect(
+      callPelotonTool('peloton_get_discipline_insights', { format: 'summary' } as never),
+    ).rejects.toThrow()
   })
 })
 

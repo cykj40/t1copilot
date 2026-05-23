@@ -1,4 +1,5 @@
 import { HttpResponse, http } from 'msw'
+import { z } from 'zod'
 
 export const PELOTON_MCP_BASE_URL = 'https://peloton-mcp-server.fly.dev'
 export const PELOTON_MCP_ENDPOINT = `${PELOTON_MCP_BASE_URL}/mcp`
@@ -94,6 +95,48 @@ const TOOL_RESULTS: Record<string, unknown> = {
   peloton_sync_workouts: MOCK_SYNC_RESULT,
 }
 
+const SERVER_TOOL_ARG_SCHEMAS: Record<string, z.ZodTypeAny> = {
+  peloton_get_workouts: z.object({ limit: z.number().int().min(1).max(100).optional() }).strict(),
+  peloton_get_discipline_insights: z.object({}).strict(),
+  peloton_detect_hypoglycemia_risk: z
+    .object({ lookback_hours: z.number().int().min(1).max(72).optional() })
+    .strict(),
+  peloton_analyze_glucose_correlation: z
+    .object({
+      workout_id: z.string().min(1),
+      glucose_readings: z
+        .array(
+          z.object({
+            timestamp: z.string(),
+            value: z.number(),
+            trend: z.string().optional(),
+          }),
+        )
+        .min(1),
+      window_minutes_before: z.number().optional(),
+      window_minutes_after: z.number().optional(),
+    })
+    .strict(),
+  peloton_sync_workouts: z.object({ force: z.boolean().optional() }).strict(),
+}
+
+function validateToolArguments(id: number | undefined, toolName: string, args: unknown) {
+  const schema = SERVER_TOOL_ARG_SCHEMAS[toolName]
+  if (!schema) return null
+
+  const parsed = schema.safeParse(args ?? {})
+  if (parsed.success) return null
+
+  return HttpResponse.json({
+    jsonrpc: '2.0',
+    id,
+    result: {
+      content: [{ type: 'text', text: JSON.stringify(parsed.error.issues) }],
+      isError: true,
+    },
+  })
+}
+
 // ── Base handlers ─────────────────────────────────────────────────────────────
 
 export const pelotonHandlers = [
@@ -110,6 +153,8 @@ export const pelotonHandlers = [
 
     if (body.method === 'tools/call') {
       const toolName = (body.params?.name as string | undefined) ?? ''
+      const validationError = validateToolArguments(body.id, toolName, body.params?.arguments)
+      if (validationError) return validationError
       const result = TOOL_RESULTS[toolName] ?? {}
       return mcpToolResponse(body.id, result)
     }
@@ -128,6 +173,8 @@ export function mcpPelotonHandlerWithFixture(toolName: string, fixture: unknown)
     if (body.method === 'initialize') return mcpInitResponse(body.id)
     if (body.id === undefined) return new HttpResponse(null, { status: 202 })
     const name = (body.params?.name as string | undefined) ?? ''
+    const validationError = validateToolArguments(body.id, name, body.params?.arguments)
+    if (validationError) return validationError
     const result = name === toolName ? fixture : (TOOL_RESULTS[name] ?? {})
     return mcpToolResponse(body.id, result)
   })
