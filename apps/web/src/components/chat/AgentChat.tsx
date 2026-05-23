@@ -82,6 +82,7 @@ function toolResultToArtifact(
 
 export function AgentChat({ onArtifact }: AgentChatProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
+  const submitInFlightRef = useRef(false)
   const [input, setInput] = useState('')
   const [hasSent, setHasSent] = useState(false)
 
@@ -103,7 +104,7 @@ export function AgentChat({ onArtifact }: AgentChatProps) {
         const inputData = 'input' in part ? part.input : undefined
         const outputData = 'output' in part ? part.output : undefined
         const artifact = toolResultToArtifact(name, inputData, outputData)
-        if (artifact) {
+        if (artifact !== null && artifact !== undefined) {
           onArtifact(artifact)
           return
         }
@@ -116,10 +117,16 @@ export function AgentChat({ onArtifact }: AgentChatProps) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  useEffect(() => {
+    if (!isLoading) submitInFlightRef.current = false
+  }, [isLoading])
+
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    e.stopPropagation()
     const text = input.trim()
-    if (!text || isLoading) return
+    if (!text || isLoading || submitInFlightRef.current) return
+    submitInFlightRef.current = true
     setInput('')
     setHasSent(true)
     sendMessage({

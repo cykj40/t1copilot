@@ -13,8 +13,13 @@ interface ChatInputProps {
 }
 
 export function ChatInput({ input, onInputChange, onSubmit, disabled = false }: ChatInputProps) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    onSubmit(e)
+  }
+
   return (
-    <form onSubmit={onSubmit} className="flex items-center gap-2 px-4 py-3">
+    <form onSubmit={handleSubmit} className="flex items-center gap-2 px-4 py-3">
       <Input
         value={input}
         onChange={onInputChange}

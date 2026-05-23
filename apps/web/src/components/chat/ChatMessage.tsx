@@ -1,4 +1,5 @@
 import type { UIMessage } from 'ai'
+import ReactMarkdown from 'react-markdown'
 import { cn } from '@/lib/utils'
 
 interface ChatMessageProps {
@@ -28,7 +29,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
           isUser ? 'bg-primary/15 text-foreground' : 'bg-card border border-border text-foreground',
         )}
       >
-        <p className="whitespace-pre-wrap">{textContent}</p>
+        <div className="prose prose-invert prose-sm max-w-none">
+          <ReactMarkdown>{textContent}</ReactMarkdown>
+        </div>
       </div>
     </div>
   )

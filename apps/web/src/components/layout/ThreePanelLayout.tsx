@@ -34,7 +34,7 @@ export function ThreePanelLayout({ children, dexcomConnected }: ThreePanelLayout
             </div>
           </div>
         </ResizablePanel>
-        {artifact !== null && (
+        {artifact !== null && artifact !== undefined && (
           <>
             <ResizableHandle
               withHandle
