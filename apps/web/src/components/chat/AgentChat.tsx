@@ -155,24 +155,6 @@ export function AgentChat({
     conversationIdRef.current = conversationId
   }, [conversationId])
 
-  // Temporary — remove before P6
-  useEffect(() => {
-    for (const msg of messages) {
-      if (msg.role !== 'assistant') continue
-      for (const part of msg.parts) {
-        if (isToolUIPart(part)) {
-          console.error('[AgentChat] tool part detected:', {
-            type: part.type,
-            state: 'state' in part ? part.state : 'NO_STATE',
-            toolCallId: 'toolCallId' in part ? part.toolCallId : 'NO_ID',
-            hasInput: 'input' in part,
-            hasOutput: 'output' in part,
-          })
-        }
-      }
-    }
-  }, [messages])
-
   // Detect completed tool invocations and push to right panel
   // biome-ignore lint/correctness/useExhaustiveDependencies: onArtifact is stable
   useEffect(() => {
