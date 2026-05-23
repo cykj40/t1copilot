@@ -41,8 +41,12 @@ function toolResultToArtifact(
     case 'render_glucose_chart':
       return {
         artifactType: 'render_glucose_chart',
-        timeRange: (inp.timeRange as string | undefined) ?? '24h',
-        title: (inp.title as string | undefined) ?? 'Glucose Trend',
+        timeRange:
+          (out?.timeRange as string | undefined) ?? (inp.timeRange as string | undefined) ?? '24h',
+        title:
+          (out?.title as string | undefined) ??
+          (inp.title as string | undefined) ??
+          'Glucose Trend',
         ...(Array.isArray(out?.readings)
           ? { readings: out.readings as GlucoseChartReading[] }
           : {}),
@@ -53,44 +57,57 @@ function toolResultToArtifact(
     case 'render_workout_correlation':
       return {
         artifactType: 'render_workout_correlation',
-        workoutId: (inp.workoutId as string | undefined) ?? 'latest',
-        workoutName: (inp.workoutName as string | undefined) ?? 'Last Workout',
+        workoutId:
+          (out?.workoutId as string | undefined) ??
+          (inp.workoutId as string | undefined) ??
+          'latest',
+        workoutName:
+          (out?.workoutName as string | undefined) ??
+          (inp.workoutName as string | undefined) ??
+          'Last Workout',
       }
     case 'render_weekly_summary':
       return {
         artifactType: 'render_weekly_summary',
-        weekLabel: (inp.weekLabel as string | undefined) ?? 'This Week',
+        weekLabel:
+          (out?.weekLabel as string | undefined) ??
+          (inp.weekLabel as string | undefined) ??
+          'This Week',
       }
     case 'render_doctor_checklist': {
-      const apptDate = inp.appointmentDate as string | undefined
+      const apptDate =
+        (out?.appointmentDate as string | undefined) ?? (inp.appointmentDate as string | undefined)
       return {
         artifactType: 'render_doctor_checklist',
         ...(typeof apptDate === 'string' ? { appointmentDate: apptDate } : {}),
       }
     }
     case 'confirm_log_event': {
-      const eventType = inp.eventType as 'insulin' | 'carbs' | 'exercise' | undefined
+      const eventType =
+        (out?.eventType as 'insulin' | 'carbs' | 'exercise' | undefined) ??
+        (inp.eventType as 'insulin' | 'carbs' | 'exercise' | undefined)
       if (!eventType) return null
-      const noteVal = inp.notes as string | undefined
+      const noteVal = (out?.notes as string | undefined) ?? (inp.notes as string | undefined)
       return {
         artifactType: 'confirm_log_event',
         eventType,
-        value: (inp.value as number | undefined) ?? 0,
-        unit: (inp.unit as string | undefined) ?? '',
+        value: (out?.value as number | undefined) ?? (inp.value as number | undefined) ?? 0,
+        unit: (out?.unit as string | undefined) ?? (inp.unit as string | undefined) ?? '',
         ...(typeof noteVal === 'string' ? { notes: noteVal } : {}),
       }
     }
     case 'render_markdown_doc':
       return {
         artifactType: 'render_markdown_doc',
-        title: (inp.title as string | undefined) ?? 'Document',
-        content: (inp.content as string | undefined) ?? '',
+        title:
+          (out?.title as string | undefined) ?? (inp.title as string | undefined) ?? 'Document',
+        content: (out?.content as string | undefined) ?? (inp.content as string | undefined) ?? '',
       }
     case 'render_html_report':
       return {
         artifactType: 'render_html_report',
-        title: (inp.title as string | undefined) ?? 'Report',
-        html: (inp.html as string | undefined) ?? '',
+        title: (out?.title as string | undefined) ?? (inp.title as string | undefined) ?? 'Report',
+        html: (out?.html as string | undefined) ?? (inp.html as string | undefined) ?? '',
       }
     default:
       return null
@@ -106,6 +123,7 @@ export function AgentChat({
   const bottomRef = useRef<HTMLDivElement>(null)
   const submitInFlightRef = useRef(false)
   const conversationIdRef = useRef<string | null>(conversationId)
+  const sentToolCallIds = useRef<Set<string>>(new Set())
   const [initialMessages] = useState<T1UIMessage[]>(() =>
     conversationId !== null ? loadPersistedMessages(conversationId) : [],
   )
@@ -137,21 +155,46 @@ export function AgentChat({
     conversationIdRef.current = conversationId
   }, [conversationId])
 
+  // Temporary — remove before P6
+  useEffect(() => {
+    for (const msg of messages) {
+      if (msg.role !== 'assistant') continue
+      for (const part of msg.parts) {
+        if (isToolUIPart(part)) {
+          console.error('[AgentChat] tool part detected:', {
+            type: part.type,
+            state: 'state' in part ? part.state : 'NO_STATE',
+            toolCallId: 'toolCallId' in part ? part.toolCallId : 'NO_ID',
+            hasInput: 'input' in part,
+            hasOutput: 'output' in part,
+          })
+        }
+      }
+    }
+  }, [messages])
+
   // Detect completed tool invocations and push to right panel
   // biome-ignore lint/correctness/useExhaustiveDependencies: onArtifact is stable
   useEffect(() => {
-    for (const msg of [...messages].reverse()) {
+    for (const msg of messages) {
       if (msg.role !== 'assistant') continue
-      for (const part of [...msg.parts].reverse()) {
+      for (const part of msg.parts) {
         if (!isToolUIPart(part)) continue
         if (!('state' in part) || part.state !== 'output-available') continue
+
+        const callId = 'toolCallId' in part ? (part.toolCallId as string) : null
+        if (callId === null || sentToolCallIds.current.has(callId)) continue
+
         const name = getToolName(part)
         const inputData = 'input' in part ? part.input : undefined
         const outputData = 'output' in part ? part.output : undefined
+
+        if (outputData === undefined || outputData === null) continue
+
         const artifact = toolResultToArtifact(name, inputData, outputData)
         if (artifact !== null && artifact !== undefined) {
+          sentToolCallIds.current.add(callId)
           onArtifact(artifact)
-          return
         }
       }
     }

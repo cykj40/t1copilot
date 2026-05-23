@@ -61,7 +61,10 @@ export function ThreePanelLayout({ children, dexcomConnected }: ThreePanelLayout
             <div className="flex-1 min-h-0">
               <AgentChat
                 key={chatKey}
-                onArtifact={(a) => setArtifact(a)}
+                onArtifact={(a) => {
+                  console.error('[ThreePanelLayout] onArtifact called:', a?.artifactType)
+                  setArtifact(a)
+                }}
                 conversationId={activeConversationId}
                 onFirstMessage={(text) => {
                   const id = createConversation(text)
