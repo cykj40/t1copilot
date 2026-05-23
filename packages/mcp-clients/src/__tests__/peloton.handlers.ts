@@ -96,8 +96,13 @@ const TOOL_RESULTS: Record<string, unknown> = {
 }
 
 const SERVER_TOOL_ARG_SCHEMAS: Record<string, z.ZodTypeAny> = {
-  peloton_get_workouts: z.object({ limit: z.number().int().min(1).max(100).optional() }).strict(),
-  peloton_get_discipline_insights: z.object({}).strict(),
+  peloton_get_workouts: z
+    .object({
+      limit: z.number().int().min(1).max(100).optional(),
+      json_response: z.boolean().optional(),
+    })
+    .strict(),
+  peloton_get_discipline_insights: z.object({ json_response: z.boolean().optional() }).strict(),
   peloton_detect_hypoglycemia_risk: z
     .object({ lookback_hours: z.number().int().min(1).max(72).optional() })
     .strict(),

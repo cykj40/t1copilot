@@ -7,7 +7,10 @@ import { unstable_noStore as noStore } from 'next/cache'
 export async function getWorkouts(): Promise<WorkoutCorrelation[]> {
   noStore()
   try {
-    const response = await callPelotonTool('peloton_get_workouts', { limit: 20 })
+    const response = await callPelotonTool('peloton_get_workouts', {
+      limit: 20,
+      json_response: true,
+    })
     return extractJson<WorkoutCorrelation[]>(response)
   } catch (err) {
     if (err instanceof PelotonMcpError) {
@@ -22,7 +25,9 @@ export async function getWorkouts(): Promise<WorkoutCorrelation[]> {
 export async function getDisciplineInsights(): Promise<DisciplineInsight[]> {
   noStore()
   try {
-    const response = await callPelotonTool('peloton_get_discipline_insights', {})
+    const response = await callPelotonTool('peloton_get_discipline_insights', {
+      json_response: true,
+    })
     return extractJson<DisciplineInsight[]>(response)
   } catch (err) {
     if (err instanceof PelotonMcpError) {

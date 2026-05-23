@@ -22,13 +22,18 @@ export type PelotonToolName = (typeof PELOTON_TOOL_NAMES)[number]
 
 // ── Input schemas (one per tool) ──────────────────────────────────────────────
 
-const PelotonGetWorkoutsSchema = z
+export const GetWorkoutsInputSchema = z
   .object({
-    limit: z.number().int().min(1).max(100).default(20),
+    limit: z.number().int().min(1).max(100).optional().default(20),
+    json_response: z.boolean().optional().default(false),
   })
   .strict()
 
-const PelotonGetDisciplineInsightsSchema = z.object({}).strict()
+export const GetDisciplineInsightsInputSchema = z
+  .object({
+    json_response: z.boolean().optional().default(false),
+  })
+  .strict()
 
 const PelotonDetectHypoglycemiaRiskSchema = z.object({
   lookback_hours: z.number().int().min(1).max(72).default(48),
@@ -54,8 +59,8 @@ const PelotonSyncWorkoutsSchema = z.object({
 })
 
 const TOOL_SCHEMAS = {
-  peloton_get_workouts: PelotonGetWorkoutsSchema,
-  peloton_get_discipline_insights: PelotonGetDisciplineInsightsSchema,
+  peloton_get_workouts: GetWorkoutsInputSchema,
+  peloton_get_discipline_insights: GetDisciplineInsightsInputSchema,
   peloton_detect_hypoglycemia_risk: PelotonDetectHypoglycemiaRiskSchema,
   peloton_analyze_glucose_correlation: PelotonAnalyzeGlucoseCorrelationSchema,
   peloton_sync_workouts: PelotonSyncWorkoutsSchema,
@@ -188,10 +193,10 @@ export async function callPelotonTool<T extends PelotonToolName>(
   let validatedArgs: Record<string, unknown>
   switch (tool) {
     case 'peloton_get_workouts':
-      validatedArgs = PelotonGetWorkoutsSchema.parse(args) as Record<string, unknown>
+      validatedArgs = GetWorkoutsInputSchema.parse(args) as Record<string, unknown>
       break
     case 'peloton_get_discipline_insights':
-      validatedArgs = PelotonGetDisciplineInsightsSchema.parse(args) as Record<string, unknown>
+      validatedArgs = GetDisciplineInsightsInputSchema.parse(args) as Record<string, unknown>
       break
     case 'peloton_detect_hypoglycemia_risk':
       validatedArgs = PelotonDetectHypoglycemiaRiskSchema.parse(args) as Record<string, unknown>

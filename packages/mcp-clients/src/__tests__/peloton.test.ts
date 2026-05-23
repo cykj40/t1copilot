@@ -30,8 +30,11 @@ describe('peloton_get_workouts', () => {
     expect(extractJson(response)).toEqual(MOCK_WORKOUTS)
   })
 
-  it('accepts explicit limit within range', async () => {
-    const response = await callPelotonTool('peloton_get_workouts', { limit: 10 })
+  it('accepts json_response=true for structured JSON payloads', async () => {
+    const response = await callPelotonTool('peloton_get_workouts', {
+      limit: 10,
+      json_response: true,
+    })
     expect(extractJson(response)).toEqual(MOCK_WORKOUTS)
   })
 
@@ -62,6 +65,13 @@ describe('peloton_get_discipline_insights', () => {
 
   it('sends no arguments for discipline insights', async () => {
     const response = await callPelotonTool('peloton_get_discipline_insights', {})
+    expect(extractJson(response)).toEqual(MOCK_DISCIPLINE_INSIGHTS)
+  })
+
+  it('accepts json_response=true for structured JSON payloads', async () => {
+    const response = await callPelotonTool('peloton_get_discipline_insights', {
+      json_response: true,
+    })
     expect(extractJson(response)).toEqual(MOCK_DISCIPLINE_INSIGHTS)
   })
 
