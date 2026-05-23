@@ -1,14 +1,40 @@
-import type { DisciplineInsight, HypoRisk, WorkoutCorrelation } from '@t1copilot/types'
-import { getDisciplineInsights, getWorkouts } from '@/actions/peloton'
-import { WorkoutCorrelationCard } from '@/components/data/WorkoutCorrelationCard'
+import type { DisciplineInsight, HypoRisk } from '@t1copilot/types'
+import { getDisciplineInsights, getWorkouts, type PelotonServerWorkout } from '@/actions/peloton'
+import {
+  WorkoutCorrelationCard,
+  type WorkoutCorrelationCardProps,
+} from '@/components/data/WorkoutCorrelationCard'
 import { Card, CardContent } from '@/components/ui/card'
 
 const RISK_PRIORITY: Record<HypoRisk, number> = { none: 0, low: 1, moderate: 2, high: 3 }
 
-function HypoRiskAlert({ workouts }: { workouts: WorkoutCorrelation[] }) {
+function mapWorkoutToCard(workout: PelotonServerWorkout): WorkoutCorrelationCardProps {
+  return {
+    id: workout.id,
+    title: workout.title,
+    discipline: workout.fitness_discipline,
+    startTime: new Date(workout.start_time * 1000).toISOString(),
+    durationSeconds: workout.duration_seconds,
+    outputWatts: workout.output_watts ?? null,
+    glucoseDelta: null,
+    dropRate: null,
+    hypoRisk: 'none',
+    glucosePreWorkout: null,
+    glucoseDuringWorkout: null,
+    glucosePostWorkout: null,
+    notes: null,
+  }
+}
+
+function HypoRiskAlert({ workouts }: { workouts: WorkoutCorrelationCardProps[] }) {
   const top = workouts.reduce((a, b) =>
-    (RISK_PRIORITY[a.hypoRisk] ?? 0) >= (RISK_PRIORITY[b.hypoRisk] ?? 0) ? a : b,
+    RISK_PRIORITY[a.hypoRisk] >= RISK_PRIORITY[b.hypoRisk] ? a : b,
   )
+  const hoursAgo = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(top.startTime).getTime()) / (60 * 60 * 1000)),
+  )
+
   return (
     <Card className="border-[#ef4444]/25 bg-[#ef4444]/5">
       <CardContent className="pt-3 pb-3 px-4">
@@ -17,10 +43,10 @@ function HypoRiskAlert({ workouts }: { workouts: WorkoutCorrelation[] }) {
         </p>
         <p className="text-xs text-muted-foreground">
           <span className="text-foreground font-medium">{top.discipline}</span> workout{' '}
-          {String(top.hoursAgo)}h ago — post-workout glucose{' '}
-          {top.postWorkoutGlucose !== undefined ? (
+          {String(hoursAgo)}h ago — post-workout glucose{' '}
+          {top.glucosePostWorkout !== null ? (
             <span className="text-foreground font-medium tabular-nums">
-              {String(top.postWorkoutGlucose)} mg/dL
+              {String(top.glucosePostWorkout)} mg/dL
             </span>
           ) : (
             'data unavailable'
@@ -79,7 +105,8 @@ function EmptyState() {
 }
 
 export default async function WorkoutPage() {
-  const [workouts, insights] = await Promise.all([getWorkouts(), getDisciplineInsights()])
+  const [rawWorkouts, insights] = await Promise.all([getWorkouts(), getDisciplineInsights()])
+  const workouts = rawWorkouts.map(mapWorkoutToCard)
 
   const alertWorkouts = workouts.filter((w) => w.hypoRisk === 'high' || w.hypoRisk === 'moderate')
 
@@ -97,14 +124,7 @@ export default async function WorkoutPage() {
       ) : (
         <div className="flex flex-col gap-2">
           {workouts.map((workout) => (
-            <WorkoutCorrelationCard
-              key={workout.id}
-              discipline={workout.discipline}
-              durationMinutes={workout.durationMinutes}
-              hoursAgo={workout.hoursAgo}
-              glucoseDropMgdl={workout.glucoseDropMgdl}
-              hypoRisk={workout.hypoRisk}
-            />
+            <WorkoutCorrelationCard key={workout.id} {...workout} />
           ))}
         </div>
       )}

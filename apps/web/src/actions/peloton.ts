@@ -1,17 +1,28 @@
 'use server'
 
 import { callPelotonTool, extractJson, extractText, PelotonMcpError } from '@t1copilot/mcp-clients'
-import type { DisciplineInsight, WorkoutCorrelation } from '@t1copilot/types'
+import type { DisciplineInsight } from '@t1copilot/types'
 import { unstable_noStore as noStore } from 'next/cache'
 
-export async function getWorkouts(): Promise<WorkoutCorrelation[]> {
+export interface PelotonServerWorkout {
+  id: string
+  title: string
+  fitness_discipline: string
+  start_time: number
+  duration_seconds: number
+  output_watts: number | null
+}
+
+export async function getWorkouts(): Promise<PelotonServerWorkout[]> {
   noStore()
   try {
     const response = await callPelotonTool('peloton_get_workouts', {
       limit: 20,
       json_response: true,
     })
-    return extractJson<WorkoutCorrelation[]>(response)
+    const workouts = extractJson<PelotonServerWorkout[]>(response)
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
+    return workouts.filter((w) => w.start_time * 1000 >= sevenDaysAgo)
   } catch (err) {
     if (err instanceof PelotonMcpError) {
       console.error(`[getWorkouts] Peloton MCP error (${String(err.statusCode)}):`, err.message)
