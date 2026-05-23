@@ -1,5 +1,7 @@
 import { callDexcomTool } from '@t1copilot/mcp-clients'
 import type { TrendArrow } from '@t1copilot/types'
+import { unstable_noStore as noStore } from 'next/cache'
+import { cache } from 'react'
 import { z } from 'zod'
 
 // ── Zod schemas matching actual Dexcom MCP server response shapes ─────────────
@@ -39,11 +41,8 @@ export const GlucoseRangeSchema = z.object({
   readings: z.array(DexcomReadingSchema),
 })
 
-export const DailySummarySchema = z.object({
-  date: z.string(),
-  statistics: DexcomStatisticsSchema,
-  readingCount: z.number(),
-})
+// get_daily_summary currently returns the same shape as get_latest_glucose.
+export const DailySummarySchema = LatestGlucoseSchema
 
 export type LatestGlucose = z.infer<typeof LatestGlucoseSchema>
 export type DexcomReading = z.infer<typeof DexcomReadingSchema>
@@ -70,18 +69,24 @@ export function mapDexcomTrend(dexcomTrend: string): TrendArrow {
 }
 
 // ── Typed MCP call wrappers ───────────────────────────────────────────────────
+// noStore: MCP uses streaming HTTP — Next.js fetch cache aborts those connections.
+// cache: dedupe parallel calls within the same RSC request (layout + page).
 
-export async function getLatestGlucose(): Promise<LatestGlucose> {
+export const getLatestGlucose = cache(async (): Promise<LatestGlucose> => {
+  noStore()
   const raw = await callDexcomTool('get_latest_glucose')
   return LatestGlucoseSchema.parse(raw)
-}
+})
 
-export async function getGlucoseRange(start: string, end: string): Promise<GlucoseRange> {
+export const getGlucoseRange = cache(async (start: string, end: string): Promise<GlucoseRange> => {
+  noStore()
   const raw = await callDexcomTool('get_glucose_range', { start_time: start, end_time: end })
   return GlucoseRangeSchema.parse(raw)
-}
+})
 
-export async function getDailySummary(date?: string): Promise<DailySummary> {
-  const raw = await callDexcomTool('get_daily_summary', date !== undefined ? { date } : {})
+export const getDailySummary = cache(async (date?: string): Promise<DailySummary> => {
+  noStore()
+  void date
+  const raw = await callDexcomTool('get_latest_glucose')
   return DailySummarySchema.parse(raw)
-}
+})

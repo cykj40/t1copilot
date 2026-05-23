@@ -5,12 +5,47 @@ const DEXCOM_MCP_URL = process.env.DEXCOM_MCP_SERVER_URL
   ? `${process.env.DEXCOM_MCP_SERVER_URL}/mcp`
   : 'https://dexcom-mcp-server.fly.dev/mcp'
 
+const DEXCOM_MCP_TIMEOUT_MS = 30000
+
+export class DexcomMcpAuthError extends Error {
+  constructor() {
+    super('DEXCOM_MCP_AUTH_TOKEN is not set — refusing to connect unauthenticated')
+    this.name = 'DexcomMcpAuthError'
+  }
+}
+
 export async function createDexcomMcpClient(): Promise<Client> {
   const token = process.env.DEXCOM_MCP_AUTH_TOKEN
+  if (!token) {
+    throw new DexcomMcpAuthError()
+  }
+
+  const noStoreInit = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    cache: 'no-store',
+  } as RequestInit
 
   const transport = new StreamableHTTPClientTransport(new URL(DEXCOM_MCP_URL), {
-    requestInit: {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    requestInit: noStoreInit,
+    // Next.js patches global fetch and tries to cache MCP streaming responses — bypass it.
+    fetch: async (url, init) => {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), DEXCOM_MCP_TIMEOUT_MS)
+      const onAbort = () => controller.abort()
+      init?.signal?.addEventListener('abort', onAbort, { once: true })
+
+      try {
+        return await fetch(url, {
+          ...init,
+          cache: 'no-store',
+          signal: controller.signal,
+        } as RequestInit)
+      } finally {
+        clearTimeout(timeout)
+        init?.signal?.removeEventListener('abort', onAbort)
+      }
     },
   })
 

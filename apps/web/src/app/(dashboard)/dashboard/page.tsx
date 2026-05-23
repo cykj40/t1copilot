@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { GlucoseCard } from '@/components/glucose/GlucoseCard'
 import { InsightFeed } from '@/components/insights/InsightFeed'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { getDailySummary, getLatestGlucose, mapDexcomTrend } from '@/lib/dexcom-mcp'
+import { getLatestGlucose, mapDexcomTrend } from '@/lib/dexcom-mcp'
 import { PLACEHOLDER_RECENT_EVENTS } from '@/lib/placeholder'
 
 const EVENT_ICONS: Record<string, string> = {
@@ -13,22 +13,13 @@ const EVENT_ICONS: Record<string, string> = {
 }
 
 export default async function DashboardPage() {
-  const [latestResult, dailyResult] = await Promise.allSettled([
-    getLatestGlucose(),
-    getDailySummary(),
-  ])
+  const latestResult = await Promise.allSettled([getLatestGlucose()])
 
-  const latest = latestResult.status === 'fulfilled' ? latestResult.value : null
-  const daily = dailyResult.status === 'fulfilled' ? dailyResult.value : null
+  const latest = latestResult[0]?.status === 'fulfilled' ? latestResult[0].value : null
 
-  if (latestResult.status === 'rejected') {
-    console.error('[Dashboard] getLatestGlucose failed:', latestResult.reason)
+  if (latestResult[0]?.status === 'rejected') {
+    console.error('[Dashboard] getLatestGlucose failed:', latestResult[0].reason)
   }
-  if (dailyResult.status === 'rejected') {
-    console.error('[Dashboard] getDailySummary failed:', dailyResult.reason)
-  }
-
-  const tir = daily?.statistics.timeInRange ?? null
 
   return (
     <div className="flex flex-col gap-4 p-4 overflow-y-auto">
@@ -43,7 +34,7 @@ export default async function DashboardPage() {
         value={latest?.value ?? null}
         trend={latest ? mapDexcomTrend(latest.trend) : null}
         timestamp={latest?.timestamp ?? null}
-        {...(latestResult.status === 'rejected' ? { error: 'CGM offline' } : {})}
+        {...(latestResult[0]?.status === 'rejected' ? { error: 'CGM offline' } : {})}
       />
 
       {/* Time in range */}
@@ -51,43 +42,14 @@ export default async function DashboardPage() {
         <CardContent className="pt-4 pb-3 px-4">
           <p className="text-xs text-muted-foreground mb-1">Time in Range</p>
           <div className="flex items-baseline gap-1">
-            <span className="text-3xl font-bold text-[#22c55e] tabular-nums">
-              {tir !== null ? String(tir) : '—'}
-            </span>
-            {tir !== null && <span className="text-sm text-muted-foreground">%</span>}
+            <span className="text-3xl font-bold text-[#22c55e] tabular-nums">—</span>
           </div>
           <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
-            <div
-              className="h-full rounded-full bg-[#22c55e]"
-              style={{ width: tir !== null ? `${String(tir)}%` : '0%' }}
-            />
+            <div className="h-full rounded-full bg-[#22c55e]" style={{ width: '0%' }} />
           </div>
           <p className="mt-1.5 text-[11px] text-muted-foreground">Today</p>
         </CardContent>
       </Card>
-
-      {/* Today's stats strip */}
-      {daily && (
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { label: 'Average', value: String(daily.statistics.average), unit: 'mg/dL' },
-            { label: 'High', value: String(daily.statistics.max), unit: 'mg/dL' },
-            { label: 'Low', value: String(daily.statistics.min), unit: 'mg/dL' },
-          ].map((stat) => (
-            <Card key={stat.label} className="bg-card border-border">
-              <CardContent className="pt-3 pb-2 px-3">
-                <p className="text-[10px] text-muted-foreground mb-0.5">{stat.label}</p>
-                <div className="flex items-baseline gap-0.5">
-                  <span className="text-lg font-bold tabular-nums text-foreground">
-                    {stat.value}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">{stat.unit}</span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
 
       {/* Recent events */}
       <Card className="bg-card border-border">

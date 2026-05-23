@@ -154,21 +154,19 @@ describe('getGlucoseRange', () => {
 // ── getDailySummary ──────────────────────────────────────────────────────────
 
 describe('getDailySummary', () => {
-  it('returns a valid daily summary with nested statistics', async () => {
+  it('temporarily returns a latest glucose reading shape', async () => {
     const result = await getDailySummary()
 
-    // DailySummary has nested statistics — not flat fields
-    expect(result.date).toBe('2026-05-23')
-    expect(result.readingCount).toBe(288)
-    expect(result.statistics.average).toBe(138)
-    expect(result.statistics.timeInRange).toBe(74)
-    expect(result.statistics.min).toBe(72)
-    expect(result.statistics.max).toBe(210)
+    expect(result.value).toBe(142)
+    expect(result.unit).toBe('mg/dL')
+    expect(result.trend).toBe('flat')
+    expect(result.ageMinutes).toBe(4)
+    expect(result.source).toBe('share')
   })
 
-  it('accepts an explicit date string', async () => {
+  it('accepts an explicit date string while using latest glucose', async () => {
     const result = await getDailySummary('2026-05-23')
-    expect(result.date).toBe('2026-05-23')
+    expect(result.value).toBe(142)
   })
 
   it('throws when the server is unreachable', async () => {
@@ -180,8 +178,8 @@ describe('getDailySummary', () => {
     await expect(getDailySummary()).rejects.toThrow()
   })
 
-  it('throws when statistics object is missing from response', async () => {
-    server.use(mcpHandlerWithBadToolResponse({ date: '2026-05-23', readingCount: 100 }))
+  it('throws when latest glucose fields are missing from response', async () => {
+    server.use(mcpHandlerWithBadToolResponse({ value: 142 }))
 
     await expect(getDailySummary()).rejects.toThrow()
   })
