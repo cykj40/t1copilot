@@ -224,9 +224,29 @@ describe('extractJson', () => {
     expect(extractJson<{ value: number }>(response)).toEqual({ value: 42 })
   })
 
-  it('throws on malformed JSON', () => {
+  it('throws a readable error when response has isError=true with plain text content', () => {
+    const response = {
+      content: [
+        {
+          type: 'text',
+          text: 'Error: Peloton client not connected. Use peloton_refresh_token.',
+        },
+      ],
+      isError: true as const,
+    }
+    expect(() => extractJson(response)).toThrow('Peloton MCP returned an error')
+  })
+
+  it('throws a readable error when content is not valid JSON', () => {
+    const response = {
+      content: [{ type: 'text', text: 'Error: something went wrong (not JSON)' }],
+    }
+    expect(() => extractJson(response)).toThrow('Peloton MCP response is not valid JSON')
+  })
+
+  it('throws on malformed JSON with readable message', () => {
     const response = { content: [{ type: 'text', text: 'not json {{{' }] }
-    expect(() => extractJson(response)).toThrow()
+    expect(() => extractJson(response)).toThrow('Peloton MCP response is not valid JSON')
   })
 
   it('throws when content is empty', () => {

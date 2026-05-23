@@ -171,7 +171,15 @@ export function extractText(response: McpToolResponse): string {
 }
 
 export function extractJson<T>(response: McpToolResponse): T {
-  return JSON.parse(extractText(response)) as T
+  const text = extractText(response)
+  if (response.isError === true) {
+    throw new Error(`Peloton MCP returned an error: ${text}`)
+  }
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    throw new Error(`Peloton MCP response is not valid JSON: ${text.slice(0, 100)}`)
+  }
 }
 
 export async function callPelotonTool<T extends PelotonToolName>(
