@@ -1,3 +1,4 @@
+import { MemoryViewer } from '@/components/settings/MemoryViewer'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { PLACEHOLDER_BASELINE } from '@/lib/placeholder'
 
@@ -99,6 +100,8 @@ export default function SettingsPage() {
           ))}
         </CardContent>
       </Card>
+
+      <MemoryViewer />
 
       <p className="text-[10px] text-muted-foreground/50 text-center">
         ⚠️ T1Copilot provides analysis only. All treatment decisions are yours.

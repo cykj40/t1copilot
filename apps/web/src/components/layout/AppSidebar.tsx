@@ -10,12 +10,15 @@ import {
   FlaskConical,
   LayoutDashboard,
   Settings,
+  Trash2,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState } from 'react'
 import { AgentStatusBar } from '@/components/shared/AgentStatusBar'
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import type { StoredConversation } from '@/hooks/useConversations'
 import { cn } from '@/lib/utils'
 
 interface NavItem {
@@ -38,9 +41,23 @@ interface AppSidebarProps {
   collapsed: boolean
   onToggle: () => void
   dexcomConnected: boolean
+  conversations: StoredConversation[]
+  activeConversationId: string | null
+  onNewConversation: () => void
+  onSelectConversation: (id: string) => void
+  onDeleteConversation: (id: string) => void
 }
 
-export function AppSidebar({ collapsed, onToggle, dexcomConnected }: AppSidebarProps) {
+export function AppSidebar({
+  collapsed,
+  onToggle,
+  dexcomConnected,
+  conversations,
+  activeConversationId,
+  onNewConversation,
+  onSelectConversation,
+  onDeleteConversation,
+}: AppSidebarProps) {
   const pathname = usePathname()
 
   return (
@@ -90,6 +107,38 @@ export function AppSidebar({ collapsed, onToggle, dexcomConnected }: AppSidebarP
             )
           })}
         </ul>
+
+        {!collapsed && (
+          <div className="flex flex-col mt-2 border-t border-sidebar-border pt-2 mx-2">
+            <div className="flex items-center justify-between px-2 mb-1">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                Chats
+              </p>
+              <button
+                type="button"
+                onClick={onNewConversation}
+                className="text-[10px] text-primary hover:text-primary/80 transition-colors"
+              >
+                + New
+              </button>
+            </div>
+            {conversations.length === 0 ? (
+              <p className="text-[10px] text-muted-foreground/40 px-2 py-1">No chats yet</p>
+            ) : (
+              <ul className="flex flex-col gap-0.5">
+                {conversations.map((conv) => (
+                  <ConversationItem
+                    key={conv.id}
+                    conv={conv}
+                    isActive={conv.id === activeConversationId}
+                    onSelect={() => onSelectConversation(conv.id)}
+                    onDelete={() => onDeleteConversation(conv.id)}
+                  />
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </nav>
 
       <Separator className="bg-sidebar-border" />
@@ -110,5 +159,48 @@ export function AppSidebar({ collapsed, onToggle, dexcomConnected }: AppSidebarP
       </button>
       {!collapsed && <AgentStatusBar dexcomConnected={dexcomConnected} />}
     </div>
+  )
+}
+
+function ConversationItem({
+  conv,
+  isActive,
+  onSelect,
+  onDelete,
+}: {
+  conv: StoredConversation
+  isActive: boolean
+  onSelect: () => void
+  onDelete: () => void
+}) {
+  const [hovered, setHovered] = useState(false)
+
+  return (
+    <li
+      className="relative flex items-center rounded-md transition-colors group"
+      style={{ background: isActive ? 'var(--sidebar-accent)' : 'transparent' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <button
+        type="button"
+        className="flex min-w-0 flex-1 items-center px-2 py-1.5 text-left"
+        onClick={onSelect}
+      >
+        <span className="text-xs text-muted-foreground truncate flex-1 leading-snug">
+          {conv.title}
+        </span>
+      </button>
+      {hovered && (
+        <button
+          type="button"
+          onClick={onDelete}
+          className="shrink-0 mr-2 text-muted-foreground/50 hover:text-destructive transition-colors"
+          aria-label="Delete conversation"
+        >
+          <Trash2 className="h-3 w-3" />
+        </button>
+      )}
+    </li>
   )
 }

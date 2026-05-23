@@ -2,9 +2,11 @@
 
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport, getToolName, isToolUIPart } from 'ai'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { MedicalDisclaimer } from '@/components/shared/MedicalDisclaimer'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { loadPersistedMessages, persistMessages } from '@/hooks/useMessagePersistence'
+import { buildMemoryContext } from '@/lib/memory-store'
 import type {
   ArtifactData,
   GlucoseChartReading,
@@ -23,6 +25,9 @@ const SUGGESTED_PROMPTS = [
 
 interface AgentChatProps {
   onArtifact: (artifact: ArtifactData) => void
+  conversationId: string | null
+  onFirstMessage: (text: string) => string
+  onMessagesChange: (id: string, count: number) => void
 }
 
 function toolResultToArtifact(
@@ -75,22 +80,62 @@ function toolResultToArtifact(
         ...(typeof noteVal === 'string' ? { notes: noteVal } : {}),
       }
     }
+    case 'render_markdown_doc':
+      return {
+        artifactType: 'render_markdown_doc',
+        title: (inp.title as string | undefined) ?? 'Document',
+        content: (inp.content as string | undefined) ?? '',
+      }
+    case 'render_html_report':
+      return {
+        artifactType: 'render_html_report',
+        title: (inp.title as string | undefined) ?? 'Report',
+        html: (inp.html as string | undefined) ?? '',
+      }
     default:
       return null
   }
 }
 
-export function AgentChat({ onArtifact }: AgentChatProps) {
+export function AgentChat({
+  onArtifact,
+  conversationId,
+  onFirstMessage,
+  onMessagesChange,
+}: AgentChatProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const submitInFlightRef = useRef(false)
+  const conversationIdRef = useRef<string | null>(conversationId)
+  const [initialMessages] = useState<T1UIMessage[]>(() =>
+    conversationId !== null ? loadPersistedMessages(conversationId) : [],
+  )
   const [input, setInput] = useState('')
-  const [hasSent, setHasSent] = useState(false)
+  const [hasSent, setHasSent] = useState(initialMessages.length > 0)
+
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport<T1UIMessage>({
+        api: '/api/chat',
+        prepareSendMessagesRequest: ({ messages }) => ({
+          body: {
+            messages,
+            memories: buildMemoryContext(),
+          },
+        }),
+      }),
+    [],
+  )
 
   const { messages, sendMessage, status } = useChat<T1UIMessage>({
-    transport: new DefaultChatTransport({ api: '/api/chat' }),
+    transport,
+    messages: initialMessages,
   })
 
   const isLoading = status === 'streaming' || status === 'submitted'
+
+  useEffect(() => {
+    conversationIdRef.current = conversationId
+  }, [conversationId])
 
   // Detect completed tool invocations and push to right panel
   // biome-ignore lint/correctness/useExhaustiveDependencies: onArtifact is stable
@@ -121,12 +166,24 @@ export function AgentChat({ onArtifact }: AgentChatProps) {
     if (!isLoading) submitInFlightRef.current = false
   }, [isLoading])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: persist on message change
+  useEffect(() => {
+    if (conversationIdRef.current === null) return
+    persistMessages(conversationIdRef.current, messages)
+    onMessagesChange(conversationIdRef.current, messages.length)
+  }, [messages])
+
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     e.stopPropagation()
     const text = input.trim()
     if (!text || isLoading || submitInFlightRef.current) return
     submitInFlightRef.current = true
+    let activeId = conversationIdRef.current
+    if (activeId === null) {
+      activeId = onFirstMessage(text)
+      conversationIdRef.current = activeId
+    }
     setInput('')
     setHasSent(true)
     sendMessage({

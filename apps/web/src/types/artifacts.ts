@@ -92,6 +92,18 @@ export interface ConfirmLogEventArtifact {
   notes?: string
 }
 
+export interface RenderMarkdownDocArtifact {
+  artifactType: 'render_markdown_doc'
+  title: string
+  content: string
+}
+
+export interface RenderHtmlReportArtifact {
+  artifactType: 'render_html_report'
+  title: string
+  html: string
+}
+
 export type ArtifactData =
   | GlucoseChartArtifact
   | InsightCardArtifact
@@ -103,6 +115,8 @@ export type ArtifactData =
   | RenderWeeklySummaryArtifact
   | RenderDoctorChecklistArtifact
   | ConfirmLogEventArtifact
+  | RenderMarkdownDocArtifact
+  | RenderHtmlReportArtifact
 
 // ── T1 tool types for useChat generic ────────────────────────────────────────
 
@@ -142,6 +156,14 @@ export type T1Tools = {
       notes?: string
       status: string
     }
+  }
+  render_markdown_doc: {
+    input: { title: string; content: string }
+    output: { title: string; content: string }
+  }
+  render_html_report: {
+    input: { title: string; html: string }
+    output: { title: string; html: string }
   }
 }
 

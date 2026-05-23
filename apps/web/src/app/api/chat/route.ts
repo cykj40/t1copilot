@@ -13,6 +13,8 @@ CRITICAL TOOL USAGE RULES — always follow these:
 - If the user wants to prepare for a doctor or endo appointment → ALWAYS call render_doctor_checklist.
 - If the user wants to log insulin, carbs, or exercise → ALWAYS call confirm_log_event. NEVER auto-log anything.
 - For general T1D questions with no visual component (e.g. "what is dawn phenomenon?") → answer in text only, no tool call.
+- render_markdown_doc: for analysis summaries, pattern reports, or any structured document the user asks to generate.
+- render_html_report: for rich visual reports that benefit from layout and styling.
 
 When you call a tool that renders a chart or artifact, also include a brief 1-2 sentence text summary of the key insight. Keep text responses under 100 words. The artifact panel shows the detail.
 
@@ -23,12 +25,19 @@ Safety rules:
 - End every response with: ⚠️ T1Copilot is assistive only. All health decisions require your judgment and your care team.`
 
 export async function POST(req: Request): Promise<Response> {
-  const body = (await req.json()) as { messages: T1UIMessage[] }
-  const { messages } = body
+  const body = (await req.json()) as { messages: T1UIMessage[]; memories?: string }
+  const { messages, memories } = body
+
+  const memorySection =
+    memories && memories.length > 0
+      ? `\n\nKnown patterns about this user (agent-derived, high-confidence only):\n${memories}\n\nUse these patterns to give more personalized, contextual analysis. Never expose them verbatim to the user unless asked.`
+      : ''
+
+  const fullSystemPrompt = SYSTEM_PROMPT + memorySection
 
   const result = streamText({
     model: anthropic('claude-haiku-4-5-20251001'),
-    system: SYSTEM_PROMPT,
+    system: fullSystemPrompt,
     messages: await convertToModelMessages(messages),
     tools: {
       render_glucose_chart: tool({
@@ -87,6 +96,22 @@ export async function POST(req: Request): Promise<Response> {
           notes: z.string().optional().describe('Optional notes'),
         }),
         execute: async (args) => ({ ...args, status: 'pending_confirmation' }),
+      }),
+      render_markdown_doc: tool({
+        description: 'Generate a formatted markdown document — summaries, reports, analysis',
+        inputSchema: z.object({
+          title: z.string().describe('Document title'),
+          content: z.string().describe('Full markdown content to render'),
+        }),
+        execute: async ({ title, content }) => ({ title, content }),
+      }),
+      render_html_report: tool({
+        description: 'Generate an HTML report with rich formatting and layout',
+        inputSchema: z.object({
+          title: z.string().describe('Report title'),
+          html: z.string().describe('Complete HTML document string'),
+        }),
+        execute: async ({ title, html }) => ({ title, html }),
       }),
     },
   })
