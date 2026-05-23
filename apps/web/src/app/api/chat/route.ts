@@ -1,4 +1,6 @@
 import { anthropic } from '@ai-sdk/anthropic'
+import { callPelotonTool, extractJson, PelotonMcpError } from '@t1copilot/mcp-clients'
+import type { WorkoutCorrelation } from '@t1copilot/types'
 import { convertToModelMessages, streamText, tool } from 'ai'
 import { z } from 'zod'
 import { getGlucoseRange } from '@/lib/dexcom-mcp'
@@ -69,8 +71,44 @@ export async function POST(req: Request): Promise<Response> {
         inputSchema: z.object({
           workoutId: z.string().describe('Workout identifier'),
           workoutName: z.string().describe('Workout name, e.g. "45min Cycling"'),
+          startTime: z.string().optional().describe('ISO 8601 workout start time'),
+          durationMinutes: z.number().optional().describe('Workout duration in minutes'),
         }),
-        execute: async ({ workoutId, workoutName }) => ({ workoutId, workoutName }),
+        execute: async ({ workoutId, workoutName, startTime, durationMinutes }) => {
+          try {
+            const workoutStart = startTime
+              ? new Date(startTime)
+              : new Date(Date.now() - 2 * 60 * 60 * 1000)
+            const windowStart = new Date(workoutStart.getTime() - 60 * 60 * 1000).toISOString()
+            const workoutEnd = new Date(
+              workoutStart.getTime() + (durationMinutes ?? 60) * 60 * 1000,
+            )
+            const windowEnd = new Date(workoutEnd.getTime() + 120 * 60 * 1000).toISOString()
+
+            const glucoseRange = await getGlucoseRange(windowStart, windowEnd)
+
+            const correlationResponse = await callPelotonTool(
+              'peloton_analyze_glucose_correlation',
+              {
+                workout_id: workoutId,
+                glucose_readings: glucoseRange.readings.map((r) => ({
+                  timestamp: r.timestamp,
+                  value: r.value,
+                  trend: r.trend,
+                })),
+              },
+            )
+            const correlation = extractJson<WorkoutCorrelation>(correlationResponse)
+            return { workoutId, workoutName, correlation }
+          } catch (err) {
+            if (err instanceof PelotonMcpError) {
+              console.error('[render_workout_correlation] Peloton MCP error:', err.message)
+            } else {
+              console.error('[render_workout_correlation] Error:', err)
+            }
+            return { workoutId, workoutName }
+          }
+        },
       }),
       render_weekly_summary: tool({
         description: 'Render a weekly glucose summary artifact in the right panel',

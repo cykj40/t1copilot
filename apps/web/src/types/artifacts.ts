@@ -1,3 +1,4 @@
+import type { WorkoutCorrelation } from '@t1copilot/types'
 import type { UIMessage } from 'ai'
 
 // ── Legacy artifact types (kept for backward compat) ─────────────────────────
@@ -72,6 +73,7 @@ export interface RenderWorkoutCorrelationArtifact {
   artifactType: 'render_workout_correlation'
   workoutId: string
   workoutName: string
+  correlation?: WorkoutCorrelation
 }
 
 export interface RenderWeeklySummaryArtifact {
@@ -131,8 +133,17 @@ export type T1Tools = {
     }
   }
   render_workout_correlation: {
-    input: { workoutId: string; workoutName: string }
-    output: { workoutId: string; workoutName: string }
+    input: {
+      workoutId: string
+      workoutName: string
+      startTime?: string
+      durationMinutes?: number
+    }
+    output: {
+      workoutId: string
+      workoutName: string
+      correlation?: WorkoutCorrelation
+    }
   }
   render_weekly_summary: {
     input: { weekLabel: string }

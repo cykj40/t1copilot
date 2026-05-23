@@ -1,3 +1,4 @@
+import type { HypoRisk } from '@t1copilot/types'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -6,10 +7,11 @@ interface WorkoutCorrelationCardProps {
   durationMinutes: number
   hoursAgo: number
   glucoseDropMgdl: number
-  hypoRisk: 'low' | 'moderate' | 'high'
+  hypoRisk: HypoRisk
 }
 
 const RISK_STYLES: Record<string, string> = {
+  none: 'text-[#a3a3a3] border-[#a3a3a3]/40 bg-[#a3a3a3]/10',
   low: 'text-[#22c55e] border-[#22c55e]/40 bg-[#22c55e]/10',
   moderate: 'text-[#f59e0b] border-[#f59e0b]/40 bg-[#f59e0b]/10',
   high: 'text-[#ef4444] border-[#ef4444]/40 bg-[#ef4444]/10',

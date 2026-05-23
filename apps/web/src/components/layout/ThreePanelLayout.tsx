@@ -36,7 +36,7 @@ export function ThreePanelLayout({ children, dexcomConnected }: ThreePanelLayout
   }, [showArtifact])
 
   const handleDividerPointerDown = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
+    (event: React.PointerEvent<HTMLButtonElement>) => {
       event.preventDefault()
       const container = splitRef.current
       if (!container) return

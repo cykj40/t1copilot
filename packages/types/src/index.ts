@@ -66,6 +66,36 @@ export const ExerciseEventSchema = z.object({
 })
 export type ExerciseEvent = z.infer<typeof ExerciseEventSchema>
 
+// ── Peloton / Exercise ────────────────────────────────────────────────────────
+
+export interface GlucoseWindow {
+  timestamp: string
+  value: number
+  trend?: string
+}
+
+export type HypoRisk = 'none' | 'low' | 'moderate' | 'high'
+
+export interface WorkoutCorrelation {
+  id: string
+  discipline: string
+  durationMinutes: number
+  startTime: string
+  hoursAgo: number
+  glucoseDropMgdl: number
+  hypoRisk: HypoRisk
+  preWorkoutGlucose?: number
+  postWorkoutGlucose?: number
+  glucoseReadings?: GlucoseWindow[]
+}
+
+export interface DisciplineInsight {
+  discipline: string
+  workoutCount: number
+  avgGlucoseDrop: number
+  avgHypoRisk: HypoRisk
+}
+
 // ── Agent ─────────────────────────────────────────────────────────────────────
 
 export const AgentRecommendationSchema = z.object({
