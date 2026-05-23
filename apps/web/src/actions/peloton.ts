@@ -1,6 +1,6 @@
 'use server'
 
-import { callPelotonTool, extractJson, PelotonMcpError } from '@t1copilot/mcp-clients'
+import { callPelotonTool, extractJson, extractText, PelotonMcpError } from '@t1copilot/mcp-clients'
 import type { DisciplineInsight, WorkoutCorrelation } from '@t1copilot/types'
 import { unstable_noStore as noStore } from 'next/cache'
 
@@ -28,7 +28,16 @@ export async function getDisciplineInsights(): Promise<DisciplineInsight[]> {
     const response = await callPelotonTool('peloton_get_discipline_insights', {
       json_response: true,
     })
-    return extractJson<DisciplineInsight[]>(response)
+    if (response.isError === true) return []
+
+    const text = extractText(response)
+    try {
+      const data = JSON.parse(text) as unknown
+      return Array.isArray(data) ? (data as DisciplineInsight[]) : []
+    } catch {
+      // Server returns plain text when no correlation data exists yet.
+      return []
+    }
   } catch (err) {
     if (err instanceof PelotonMcpError) {
       console.error(

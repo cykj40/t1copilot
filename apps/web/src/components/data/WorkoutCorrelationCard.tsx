@@ -7,7 +7,7 @@ interface WorkoutCorrelationCardProps {
   durationMinutes: number
   hoursAgo: number
   glucoseDropMgdl: number
-  hypoRisk: HypoRisk
+  hypoRisk?: HypoRisk
 }
 
 const RISK_STYLES: Record<string, string> = {
@@ -33,8 +33,11 @@ export function WorkoutCorrelationCard({
             <p className="text-sm font-medium text-foreground">{discipline}</p>
             <p className="text-xs text-muted-foreground">{String(durationMinutes)} min</p>
           </div>
-          <Badge variant="outline" className={`text-[10px] shrink-0 ${RISK_STYLES[hypoRisk]}`}>
-            {hypoRisk.toUpperCase()} RISK
+          <Badge
+            variant="outline"
+            className={`text-[10px] shrink-0 ${RISK_STYLES[hypoRisk ?? 'none']}`}
+          >
+            {(hypoRisk ?? 'none').toUpperCase()} RISK
           </Badge>
         </div>
         <div className="flex items-center gap-2 mt-3">
