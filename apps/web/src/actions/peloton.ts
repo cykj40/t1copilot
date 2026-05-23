@@ -17,7 +17,7 @@ export async function getWorkouts(): Promise<PelotonServerWorkout[]> {
   noStore()
   try {
     const response = await callPelotonTool('peloton_get_workouts', {
-      limit: 20,
+      limit: 10,
       json_response: true,
     })
     const workouts = extractJson<PelotonServerWorkout[]>(response)
