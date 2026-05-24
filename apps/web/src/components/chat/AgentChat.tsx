@@ -222,7 +222,7 @@ export function AgentChat({
   }
 
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className="flex h-full min-h-0 flex-col bg-background overflow-hidden">
       {/* Header */}
       <div className="flex h-10 items-center border-b border-border px-4 shrink-0">
         <span className="text-xs font-medium text-muted-foreground">Agent Chat</span>
@@ -237,7 +237,7 @@ export function AgentChat({
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 px-4">
+      <ScrollArea className="flex-1 min-h-0 px-4">
         <div className="flex flex-col gap-4 py-4">
           {messages.length === 0 && !hasSent ? (
             <EmptyState onSelectPrompt={handleSuggestedPrompt} />

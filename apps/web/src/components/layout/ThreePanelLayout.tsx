@@ -11,6 +11,9 @@ import { AppSidebar } from './AppSidebar'
 const ARTIFACT_DEFAULT_PCT = 40
 const ARTIFACT_MIN_PCT = 20
 const ARTIFACT_MAX_PCT = 70
+const CHAT_DEFAULT_TOP_PCT = 40
+const CHAT_MIN_TOP_PCT = 10
+const CHAT_MAX_TOP_PCT = 80
 
 interface ThreePanelLayoutProps {
   children?: React.ReactNode
@@ -21,9 +24,11 @@ export function ThreePanelLayout({ children, dexcomConnected }: ThreePanelLayout
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [artifact, setArtifact] = useState<ArtifactData | null>(null)
   const [artifactWidthPct, setArtifactWidthPct] = useState(ARTIFACT_DEFAULT_PCT)
+  const [topHeightPct, setTopHeightPct] = useState(CHAT_DEFAULT_TOP_PCT)
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
   const [chatKey, setChatKey] = useState('new')
   const splitRef = useRef<HTMLDivElement>(null)
+  const columnRef = useRef<HTMLDivElement>(null)
   const { conversations, createConversation, updateConversation, deleteConversation } =
     useConversations()
 
@@ -63,6 +68,30 @@ export function ThreePanelLayout({ children, dexcomConnected }: ThreePanelLayout
     [artifactWidthPct],
   )
 
+  const handleVerticalDividerPointerDown = useCallback(
+    (event: React.PointerEvent<HTMLButtonElement>) => {
+      event.preventDefault()
+      const column = columnRef.current
+      if (!column) return
+      const startY = event.clientY
+      const startPct = topHeightPct
+      function onPointerMove(ev: PointerEvent) {
+        const rect = column?.getBoundingClientRect()
+        if (!rect || rect.height <= 0) return
+        const deltaPct = ((ev.clientY - startY) / rect.height) * 100
+        const next = Math.min(CHAT_MAX_TOP_PCT, Math.max(CHAT_MIN_TOP_PCT, startPct + deltaPct))
+        setTopHeightPct(next)
+      }
+      function onPointerUp() {
+        window.removeEventListener('pointermove', onPointerMove)
+        window.removeEventListener('pointerup', onPointerUp)
+      }
+      window.addEventListener('pointermove', onPointerMove)
+      window.addEventListener('pointerup', onPointerUp)
+    },
+    [topHeightPct],
+  )
+
   function handleCloseArtifact() {
     setArtifact(null)
   }
@@ -99,27 +128,65 @@ export function ThreePanelLayout({ children, dexcomConnected }: ThreePanelLayout
 
       <div ref={splitRef} className="flex flex-1 min-w-0 h-full overflow-hidden">
         <div
+          ref={columnRef}
           className="flex min-h-0 min-w-0 flex-col overflow-hidden transition-[width] duration-200 ease-out"
           style={{ width: showArtifact ? `${100 - artifactWidthPct}%` : '100%' }}
         >
-          {children && (
-            <div className="border-b border-border overflow-y-auto max-h-[55%] shrink-0">
-              {children}
+          {children ? (
+            <>
+              {/* Content pane — height controlled by drag */}
+              <div
+                className="border-b border-border overflow-y-auto shrink-0"
+                style={{ height: `${topHeightPct}%` }}
+              >
+                {children}
+              </div>
+
+              {/* Horizontal drag divider */}
+              <button
+                type="button"
+                aria-label="Resize chat panel"
+                onPointerDown={handleVerticalDividerPointerDown}
+                className={cn(
+                  'relative z-10 h-1.5 w-full shrink-0 cursor-row-resize touch-none border-0 p-0',
+                  'bg-border hover:bg-primary/50 active:bg-primary transition-colors',
+                )}
+              >
+                <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-1">
+                  <span className="block h-0.5 w-5 rounded-full bg-muted-foreground/40" />
+                </div>
+              </button>
+
+              {/* Chat pane — takes remaining height */}
+              <div className="min-h-0 overflow-hidden" style={{ height: `${100 - topHeightPct}%` }}>
+                <AgentChat
+                  key={chatKey}
+                  onArtifact={setArtifact}
+                  conversationId={activeConversationId}
+                  onFirstMessage={(text) => {
+                    const id = createConversation(text)
+                    setActiveConversationId(id)
+                    return id
+                  }}
+                  onMessagesChange={(id, count) => updateConversation(id, count)}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 min-h-0">
+              <AgentChat
+                key={chatKey}
+                onArtifact={setArtifact}
+                conversationId={activeConversationId}
+                onFirstMessage={(text) => {
+                  const id = createConversation(text)
+                  setActiveConversationId(id)
+                  return id
+                }}
+                onMessagesChange={(id, count) => updateConversation(id, count)}
+              />
             </div>
           )}
-          <div className="flex-1 min-h-0">
-            <AgentChat
-              key={chatKey}
-              onArtifact={setArtifact}
-              conversationId={activeConversationId}
-              onFirstMessage={(text) => {
-                const id = createConversation(text)
-                setActiveConversationId(id)
-                return id
-              }}
-              onMessagesChange={(id, count) => updateConversation(id, count)}
-            />
-          </div>
         </div>
 
         {showArtifact && artifact !== null && (
