@@ -27,10 +27,10 @@ const EventTimelineSchema = z.object({
     .optional(),
   summary: z
     .object({
-      totalEvents: z.number(),
-      totalInsulin: z.number(),
-      totalCarbs: z.number(),
-      exerciseSessions: z.number(),
+      totalEvents: z.coerce.number(),
+      totalInsulin: z.coerce.number(),
+      totalCarbs: z.coerce.number(),
+      exerciseSessions: z.coerce.number(),
     })
     .optional(),
   timeline: z.array(TimelineEventSchema),
