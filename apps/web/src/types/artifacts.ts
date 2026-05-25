@@ -91,6 +91,8 @@ export interface ConfirmLogEventArtifact {
   eventType: 'insulin' | 'carbs' | 'exercise'
   value: number
   unit: string
+  subtype?: string
+  food_description?: string
   notes?: string
 }
 
@@ -158,12 +160,16 @@ export type T1Tools = {
       eventType: 'insulin' | 'carbs' | 'exercise'
       value: number
       unit: string
+      subtype?: string
+      food_description?: string
       notes?: string
     }
     output: {
       eventType: 'insulin' | 'carbs' | 'exercise'
       value: number
       unit: string
+      subtype?: string
+      food_description?: string
       notes?: string
       status: string
     }

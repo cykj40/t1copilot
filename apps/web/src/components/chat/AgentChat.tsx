@@ -2,7 +2,7 @@
 
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport, getToolName, isToolUIPart } from 'ai'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { MedicalDisclaimer } from '@/components/shared/MedicalDisclaimer'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { loadPersistedMessages, persistMessages } from '@/hooks/useMessagePersistence'
@@ -22,6 +22,10 @@ const SUGGESTED_PROMPTS = [
   'Give me a weekly summary',
   'Log 3 units rapid insulin',
 ]
+
+export interface AgentChatHandle {
+  sendMessage: (text: string) => void
+}
 
 interface AgentChatProps {
   onArtifact: (artifact: ArtifactData) => void
@@ -88,12 +92,18 @@ function toolResultToArtifact(
         (inp.eventType as 'insulin' | 'carbs' | 'exercise' | undefined)
       if (!eventType) return null
       const noteVal = (out?.notes as string | undefined) ?? (inp.notes as string | undefined)
+      const subtypeVal = (out?.subtype as string | undefined) ?? (inp.subtype as string | undefined)
+      const foodDescVal =
+        (out?.food_description as string | undefined) ??
+        (inp.food_description as string | undefined)
       return {
         artifactType: 'confirm_log_event',
         eventType,
         value: (out?.value as number | undefined) ?? (inp.value as number | undefined) ?? 0,
         unit: (out?.unit as string | undefined) ?? (inp.unit as string | undefined) ?? '',
         ...(typeof noteVal === 'string' ? { notes: noteVal } : {}),
+        ...(typeof subtypeVal === 'string' ? { subtype: subtypeVal } : {}),
+        ...(typeof foodDescVal === 'string' ? { food_description: foodDescVal } : {}),
       }
     }
     case 'render_markdown_doc':
@@ -114,12 +124,10 @@ function toolResultToArtifact(
   }
 }
 
-export function AgentChat({
-  onArtifact,
-  conversationId,
-  onFirstMessage,
-  onMessagesChange,
-}: AgentChatProps) {
+export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function AgentChat(
+  { onArtifact, conversationId, onFirstMessage, onMessagesChange },
+  ref,
+) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const submitInFlightRef = useRef(false)
   const conversationIdRef = useRef<string | null>(conversationId)
@@ -144,12 +152,35 @@ export function AgentChat({
     [],
   )
 
-  const { messages, sendMessage, status } = useChat<T1UIMessage>({
+  const {
+    messages,
+    sendMessage: chatSendMessage,
+    status,
+  } = useChat<T1UIMessage>({
     transport,
     messages: initialMessages,
   })
 
   const isLoading = status === 'streaming' || status === 'submitted'
+
+  function doSendMessage(text: string) {
+    const trimmed = text.trim()
+    if (!trimmed || isLoading || submitInFlightRef.current) return
+    submitInFlightRef.current = true
+    let activeId = conversationIdRef.current
+    if (activeId === null) {
+      activeId = onFirstMessage(trimmed)
+      conversationIdRef.current = activeId
+    }
+    setHasSent(true)
+    chatSendMessage({
+      role: 'user',
+      parts: [{ type: 'text', text: trimmed }],
+    })
+  }
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chatSendMessage and onFirstMessage are stable
+  useImperativeHandle(ref, () => ({ sendMessage: doSendMessage }), [isLoading])
 
   useEffect(() => {
     conversationIdRef.current = conversationId
@@ -201,20 +232,8 @@ export function AgentChat({
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     e.stopPropagation()
-    const text = input.trim()
-    if (!text || isLoading || submitInFlightRef.current) return
-    submitInFlightRef.current = true
-    let activeId = conversationIdRef.current
-    if (activeId === null) {
-      activeId = onFirstMessage(text)
-      conversationIdRef.current = activeId
-    }
+    doSendMessage(input)
     setInput('')
-    setHasSent(true)
-    sendMessage({
-      role: 'user',
-      parts: [{ type: 'text', text }],
-    })
   }
 
   function handleSuggestedPrompt(prompt: string) {
@@ -260,7 +279,7 @@ export function AgentChat({
       </div>
     </div>
   )
-}
+})
 
 function EmptyState({ onSelectPrompt }: { onSelectPrompt: (p: string) => void }) {
   return (

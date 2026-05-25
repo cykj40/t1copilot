@@ -1,13 +1,34 @@
+import { getEventTimeline } from '@/actions/dexcom'
 import { EventLoggerForm } from '@/components/data/EventLoggerForm'
 import { Card, CardContent } from '@/components/ui/card'
 
-const RECENT_LOGS = [
-  { id: 'l1', icon: '💉', label: 'Insulin', value: '3u rapid', minutesAgo: 45 },
-  { id: 'l2', icon: '🍞', label: 'Carbs', value: '32g', minutesAgo: 60 },
-  { id: 'l3', icon: '💉', label: 'Insulin', value: '1u correction', minutesAgo: 180 },
-]
+const EVENT_ICONS: Record<string, string> = {
+  insulin: '💉',
+  carbs: '🍞',
+  exercise: '🏃',
+}
 
-export default function LogPage() {
+function describeEvent(type: string, data: Record<string, unknown>): string {
+  if (type === 'insulin') {
+    return `${String(data.units ?? '')}u ${String(data.type ?? 'rapid')} insulin`
+  }
+  if (type === 'carbs') {
+    const food = data.food_description ? ` — ${String(data.food_description)}` : ''
+    return `${String(data.grams ?? '')}g carbs${food}`
+  }
+  if (type === 'exercise') {
+    return `${String(data.duration_minutes ?? '')}min ${String(data.activity_type ?? 'exercise')}`
+  }
+  return type
+}
+
+export default async function LogPage() {
+  const now = new Date()
+  const start = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+  const timeline = await getEventTimeline(start.toISOString(), now.toISOString())
+
+  const events = timeline?.timeline ?? []
+
   return (
     <div className="flex flex-col gap-4 p-4 overflow-y-auto">
       <div>
@@ -19,24 +40,34 @@ export default function LogPage() {
 
       <EventLoggerForm />
 
-      {/* Recent logs */}
       <Card className="bg-card border-border">
         <CardContent className="pt-4 pb-3 px-4">
           <p className="text-xs font-medium text-muted-foreground mb-2">Recent logs</p>
-          <ul className="flex flex-col gap-2">
-            {RECENT_LOGS.map((log) => (
-              <li key={log.id} className="flex items-center gap-2">
-                <span className="text-sm">{log.icon}</span>
-                <span className="text-xs text-foreground">{log.label}</span>
-                <span className="text-xs font-medium text-foreground tabular-nums">
-                  {log.value}
-                </span>
-                <span className="ml-auto text-[10px] text-muted-foreground/60">
-                  {String(log.minutesAgo)}m ago
-                </span>
-              </li>
-            ))}
-          </ul>
+          {events.length === 0 ? (
+            <p className="text-xs text-muted-foreground/60">
+              No events logged in the last 24 hours
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {events.map((event, i) => {
+                const minutesAgo = Math.round(
+                  (now.getTime() - new Date(event.timestamp).getTime()) / 60000,
+                )
+                return (
+                  <li key={`${event.timestamp}-${String(i)}`} className="flex items-center gap-2">
+                    <span className="text-sm">{EVENT_ICONS[event.type] ?? '📝'}</span>
+                    <span className="text-xs text-foreground capitalize">{event.type}</span>
+                    <span className="text-xs font-medium text-foreground tabular-nums">
+                      {describeEvent(event.type, event.data)}
+                    </span>
+                    <span className="ml-auto text-[10px] text-muted-foreground/60">
+                      {String(minutesAgo)}m ago
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
         </CardContent>
       </Card>
     </div>

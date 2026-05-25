@@ -1,7 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { AgentChat } from '@/components/chat/AgentChat'
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { AgentChat, type AgentChatHandle } from '@/components/chat/AgentChat'
 import { ArtifactPanel } from '@/components/layout/ArtifactPanel'
 import { useConversations } from '@/hooks/useConversations'
 import { cn } from '@/lib/utils'
@@ -14,6 +14,22 @@ const ARTIFACT_MAX_PCT = 70
 const CHAT_DEFAULT_TOP_PCT = 40
 const CHAT_MIN_TOP_PCT = 10
 const CHAT_MAX_TOP_PCT = 80
+
+// ── Log context — lets the EventLoggerForm send messages to AgentChat ─────────
+
+interface LogContextValue {
+  submitLogMessage: (text: string) => void
+}
+
+export const LogContext = React.createContext<LogContextValue | null>(null)
+
+export function useLogContext(): LogContextValue {
+  const ctx = useContext(LogContext)
+  if (ctx === null) throw new Error('useLogContext must be used inside ThreePanelLayout')
+  return ctx
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface ThreePanelLayoutProps {
   children?: React.ReactNode
@@ -29,6 +45,7 @@ export function ThreePanelLayout({ children, dexcomConnected }: ThreePanelLayout
   const [chatKey, setChatKey] = useState('new')
   const splitRef = useRef<HTMLDivElement>(null)
   const columnRef = useRef<HTMLDivElement>(null)
+  const agentChatRef = useRef<AgentChatHandle>(null)
   const { conversations, createConversation, updateConversation, deleteConversation } =
     useConversations()
 
@@ -113,105 +130,105 @@ export function ThreePanelLayout({ children, dexcomConnected }: ThreePanelLayout
     if (id === activeConversationId) handleNewConversation()
   }
 
+  const submitLogMessage = useCallback((text: string) => {
+    agentChatRef.current?.sendMessage(text)
+  }, [])
+
+  const sharedChatProps = {
+    onArtifact: setArtifact,
+    conversationId: activeConversationId,
+    onFirstMessage: (text: string) => {
+      const id = createConversation(text)
+      setActiveConversationId(id)
+      return id
+    },
+    onMessagesChange: (id: string, count: number) => updateConversation(id, count),
+  }
+
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      <AppSidebar
-        collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed((v) => !v)}
-        dexcomConnected={dexcomConnected}
-        conversations={conversations}
-        activeConversationId={activeConversationId}
-        onNewConversation={handleNewConversation}
-        onSelectConversation={handleSelectConversation}
-        onDeleteConversation={handleDeleteConversation}
-      />
+    <LogContext.Provider value={{ submitLogMessage }}>
+      <div className="flex h-screen overflow-hidden bg-background">
+        <AppSidebar
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed((v) => !v)}
+          dexcomConnected={dexcomConnected}
+          conversations={conversations}
+          activeConversationId={activeConversationId}
+          onNewConversation={handleNewConversation}
+          onSelectConversation={handleSelectConversation}
+          onDeleteConversation={handleDeleteConversation}
+        />
 
-      <div ref={splitRef} className="flex flex-1 min-w-0 h-full overflow-hidden">
-        <div
-          ref={columnRef}
-          className="flex min-h-0 min-w-0 flex-col overflow-hidden transition-[width] duration-200 ease-out"
-          style={{ width: showArtifact ? `${100 - artifactWidthPct}%` : '100%' }}
-        >
-          {children ? (
-            <>
-              {/* Content pane — height controlled by drag */}
-              <div
-                className="border-b border-border overflow-y-auto shrink-0"
-                style={{ height: `${topHeightPct}%` }}
-              >
-                {children}
+        <div ref={splitRef} className="flex flex-1 min-w-0 h-full overflow-hidden">
+          <div
+            ref={columnRef}
+            className="flex min-h-0 min-w-0 flex-col overflow-hidden transition-[width] duration-200 ease-out"
+            style={{ width: showArtifact ? `${100 - artifactWidthPct}%` : '100%' }}
+          >
+            {children ? (
+              <>
+                {/* Content pane — height controlled by drag */}
+                <div
+                  className="border-b border-border overflow-y-auto shrink-0"
+                  style={{ height: `${topHeightPct}%` }}
+                >
+                  {children}
+                </div>
+
+                {/* Horizontal drag divider */}
+                <button
+                  type="button"
+                  aria-label="Resize chat panel"
+                  onPointerDown={handleVerticalDividerPointerDown}
+                  className={cn(
+                    'relative z-10 h-1.5 w-full shrink-0 cursor-row-resize touch-none border-0 p-0',
+                    'bg-border hover:bg-primary/50 active:bg-primary transition-colors',
+                  )}
+                >
+                  <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-1">
+                    <span className="block h-0.5 w-5 rounded-full bg-muted-foreground/40" />
+                  </div>
+                </button>
+
+                {/* Chat pane — takes remaining height */}
+                <div
+                  className="min-h-0 overflow-hidden"
+                  style={{ height: `${100 - topHeightPct}%` }}
+                >
+                  <AgentChat ref={agentChatRef} key={chatKey} {...sharedChatProps} />
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 min-h-0">
+                <AgentChat ref={agentChatRef} key={chatKey} {...sharedChatProps} />
               </div>
+            )}
+          </div>
 
-              {/* Horizontal drag divider */}
+          {showArtifact && artifact !== null && (
+            <>
               <button
                 type="button"
-                aria-label="Resize chat panel"
-                onPointerDown={handleVerticalDividerPointerDown}
+                aria-label="Resize artifact panel"
+                onPointerDown={handleDividerPointerDown}
                 className={cn(
-                  'relative z-10 h-1.5 w-full shrink-0 cursor-row-resize touch-none border-0 p-0',
+                  'relative z-10 w-1.5 shrink-0 cursor-col-resize touch-none border-0 p-0',
                   'bg-border hover:bg-primary/50 active:bg-primary transition-colors',
                 )}
               >
-                <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-1">
-                  <span className="block h-0.5 w-5 rounded-full bg-muted-foreground/40" />
-                </div>
+                <div className="pointer-events-none absolute inset-y-0 left-1/2 w-1 -translate-x-1/2 rounded-full bg-border" />
               </button>
 
-              {/* Chat pane — takes remaining height */}
-              <div className="min-h-0 overflow-hidden" style={{ height: `${100 - topHeightPct}%` }}>
-                <AgentChat
-                  key={chatKey}
-                  onArtifact={setArtifact}
-                  conversationId={activeConversationId}
-                  onFirstMessage={(text) => {
-                    const id = createConversation(text)
-                    setActiveConversationId(id)
-                    return id
-                  }}
-                  onMessagesChange={(id, count) => updateConversation(id, count)}
-                />
-              </div>
+              <aside
+                className="flex h-full min-w-[280px] shrink-0 flex-col overflow-hidden border-l border-border bg-background transition-[width] duration-200 ease-out"
+                style={{ width: `${artifactWidthPct}%` }}
+              >
+                <ArtifactPanel artifact={artifact} onClose={handleCloseArtifact} />
+              </aside>
             </>
-          ) : (
-            <div className="flex-1 min-h-0">
-              <AgentChat
-                key={chatKey}
-                onArtifact={setArtifact}
-                conversationId={activeConversationId}
-                onFirstMessage={(text) => {
-                  const id = createConversation(text)
-                  setActiveConversationId(id)
-                  return id
-                }}
-                onMessagesChange={(id, count) => updateConversation(id, count)}
-              />
-            </div>
           )}
         </div>
-
-        {showArtifact && artifact !== null && (
-          <>
-            <button
-              type="button"
-              aria-label="Resize artifact panel"
-              onPointerDown={handleDividerPointerDown}
-              className={cn(
-                'relative z-10 w-1.5 shrink-0 cursor-col-resize touch-none border-0 p-0',
-                'bg-border hover:bg-primary/50 active:bg-primary transition-colors',
-              )}
-            >
-              <div className="pointer-events-none absolute inset-y-0 left-1/2 w-1 -translate-x-1/2 rounded-full bg-border" />
-            </button>
-
-            <aside
-              className="flex h-full min-w-[280px] shrink-0 flex-col overflow-hidden border-l border-border bg-background transition-[width] duration-200 ease-out"
-              style={{ width: `${artifactWidthPct}%` }}
-            >
-              <ArtifactPanel artifact={artifact} onClose={handleCloseArtifact} />
-            </aside>
-          </>
-        )}
       </div>
-    </div>
+    </LogContext.Provider>
   )
 }
