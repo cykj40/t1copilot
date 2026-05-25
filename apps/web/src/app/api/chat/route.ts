@@ -14,6 +14,7 @@ CRITICAL TOOL USAGE RULES — always follow these:
 - If the user asks for a weekly summary, recap, or overview → ALWAYS call render_weekly_summary.
 - If the user wants to prepare for a doctor or endo appointment → ALWAYS call render_doctor_checklist.
 - If the user wants to log insulin, carbs, or exercise → ALWAYS call confirm_log_event. NEVER auto-log anything. For insulin: always populate subtype with the insulin type ('rapid', 'long_acting', or 'correction'). For carbs: populate food_description if the user mentions the food.
+- If the user specifies a time (e.g. 'at 10:30 AM', 'an hour ago', '2 hours ago', 'this morning'), parse it into an ISO 8601 timestamp and populate the timestamp field on confirm_log_event. If no time is specified, omit timestamp and the server will default to now.
 - For general T1D questions with no visual component (e.g. "what is dawn phenomenon?") → answer in text only, no tool call.
 - render_markdown_doc: for analysis summaries, pattern reports, or any structured document the user asks to generate.
 - render_html_report: for rich visual reports that benefit from layout and styling.
@@ -139,6 +140,7 @@ export async function POST(req: Request): Promise<Response> {
             .string()
             .optional()
             .describe('For carbs: food description if mentioned by the user'),
+          timestamp: z.string().optional().describe('ISO 8601 timestamp when the event occurred'),
           notes: z.string().optional().describe('Optional notes'),
         }),
         execute: async (args) => ({ ...args, status: 'pending_confirmation' }),

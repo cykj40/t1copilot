@@ -93,6 +93,7 @@ export interface ConfirmLogEventArtifact {
   unit: string
   subtype?: string
   food_description?: string
+  timestamp?: string
   notes?: string
 }
 
@@ -162,6 +163,7 @@ export type T1Tools = {
       unit: string
       subtype?: string
       food_description?: string
+      timestamp?: string
       notes?: string
     }
     output: {
@@ -170,6 +172,7 @@ export type T1Tools = {
       unit: string
       subtype?: string
       food_description?: string
+      timestamp?: string
       notes?: string
       status: string
     }

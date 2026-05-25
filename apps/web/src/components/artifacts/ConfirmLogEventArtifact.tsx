@@ -27,6 +27,8 @@ export function ConfirmLogEventArtifact({ artifact }: ConfirmLogEventArtifactPro
   const [status, setStatus] = useState<Status>('pending')
   const [errorMessage, setErrorMessage] = useState('')
   const router = useRouter()
+  const formattedTimestamp =
+    artifact.timestamp !== undefined ? new Date(artifact.timestamp).toLocaleString() : undefined
 
   async function handleConfirm() {
     setStatus('loading')
@@ -38,9 +40,10 @@ export function ConfirmLogEventArtifact({ artifact }: ConfirmLogEventArtifactPro
           eventType: artifact.eventType,
           value: artifact.value,
           unit: artifact.unit,
-          subtype: artifact.subtype,
-          food_description: artifact.food_description,
-          notes: artifact.notes,
+          ...(artifact.subtype && { subtype: artifact.subtype }),
+          ...(artifact.food_description && { food_description: artifact.food_description }),
+          ...(artifact.timestamp && { timestamp: artifact.timestamp }),
+          ...(artifact.notes && { notes: artifact.notes }),
         }),
       })
       const data = (await res.json()) as {
@@ -148,6 +151,12 @@ export function ConfirmLogEventArtifact({ artifact }: ConfirmLogEventArtifactPro
               <div className="flex justify-between">
                 <dt className="text-xs text-[#6b6b6b]">Food</dt>
                 <dd className="text-xs text-[#a3a3a3]">{artifact.food_description}</dd>
+              </div>
+            )}
+            {formattedTimestamp !== undefined && (
+              <div className="flex justify-between">
+                <dt className="text-xs text-[#6b6b6b]">When</dt>
+                <dd className="text-xs text-[#a3a3a3]">{formattedTimestamp}</dd>
               </div>
             )}
             {artifact.notes !== undefined && (

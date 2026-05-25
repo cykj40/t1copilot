@@ -8,6 +8,7 @@ const LogEventBodySchema = z.object({
   unit: z.string(),
   subtype: z.string().optional(),
   food_description: z.string().optional(),
+  timestamp: z.string().optional(),
   notes: z.string().optional(),
 })
 
@@ -24,7 +25,7 @@ export async function POST(req: Request): Promise<Response> {
     return NextResponse.json({ success: false, error: 'Invalid request body' }, { status: 400 })
   }
 
-  const { eventType, value, unit, subtype, food_description, notes } = parsed.data
+  const { eventType, value, unit, subtype, food_description, timestamp, notes } = parsed.data
 
   try {
     let result: unknown
@@ -33,19 +34,22 @@ export async function POST(req: Request): Promise<Response> {
       result = await callDexcomTool('log_insulin', {
         units: value,
         type: subtype ?? 'rapid',
-        ...(notes !== undefined ? { notes } : {}),
+        ...(timestamp && { timestamp }),
+        ...(notes && { notes }),
       })
     } else if (eventType === 'carbs') {
       result = await callDexcomTool('log_carbs', {
         grams: value,
-        ...(food_description !== undefined ? { food_description } : {}),
-        ...(notes !== undefined ? { notes } : {}),
+        ...(food_description && { food_description }),
+        ...(timestamp && { timestamp }),
+        ...(notes && { notes }),
       })
     } else {
       result = await callDexcomTool('log_exercise', {
         activity_type: unit,
         duration_minutes: value,
-        ...(notes !== undefined ? { notes } : {}),
+        ...(timestamp && { timestamp }),
+        ...(notes && { notes }),
       })
     }
 

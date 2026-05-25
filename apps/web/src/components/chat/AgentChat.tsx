@@ -96,6 +96,8 @@ function toolResultToArtifact(
       const foodDescVal =
         (out?.food_description as string | undefined) ??
         (inp.food_description as string | undefined)
+      const timestampVal =
+        (out?.timestamp as string | undefined) ?? (inp.timestamp as string | undefined)
       return {
         artifactType: 'confirm_log_event',
         eventType,
@@ -104,6 +106,7 @@ function toolResultToArtifact(
         ...(typeof noteVal === 'string' ? { notes: noteVal } : {}),
         ...(typeof subtypeVal === 'string' ? { subtype: subtypeVal } : {}),
         ...(typeof foodDescVal === 'string' ? { food_description: foodDescVal } : {}),
+        ...(typeof timestampVal === 'string' ? { timestamp: timestampVal } : {}),
       }
     }
     case 'render_markdown_doc':

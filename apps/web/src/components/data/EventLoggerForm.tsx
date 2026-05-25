@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 
 type Tab = 'insulin' | 'carbs' | 'exercise'
 type InsulinType = 'rapid' | 'long_acting' | 'correction'
+type WhenMode = 'now' | 'earlier'
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'insulin', label: 'Insulin', icon: '💉' },
@@ -24,11 +25,15 @@ const INSULIN_TYPES: { id: InsulinType; label: string }[] = [
 export function EventLoggerForm() {
   const { submitLogMessage } = useLogContext()
   const [tab, setTab] = useState<Tab>('insulin')
-  const [value, setValue] = useState('')
-  const [notes, setNotes] = useState('')
+  const [value, setValue] = useState<string>('')
+  const [notes, setNotes] = useState<string>('')
   const [insulinType, setInsulinType] = useState<InsulinType>('rapid')
-  const [foodDesc, setFoodDesc] = useState('')
-  const [exerciseType, setExerciseType] = useState('')
+  const [foodDesc, setFoodDesc] = useState<string>('')
+  const [exerciseType, setExerciseType] = useState<string>('')
+  const [whenMode, setWhenMode] = useState<WhenMode>('now')
+  const [eventDate, setEventDate] = useState<string>('')
+  const [eventTime, setEventTime] = useState<string>('')
+  const [duration, setDuration] = useState<string>('')
 
   const placeholders: Record<Tab, string> = {
     insulin: 'Units (e.g. 3)',
@@ -47,21 +52,55 @@ export function EventLoggerForm() {
     setNotes('')
     setFoodDesc('')
     setExerciseType('')
+    setWhenMode('now')
+    setEventDate('')
+    setEventTime('')
+    setDuration('')
+  }
+
+  function formatTimeForChat(iso: string): string {
+    return new Date(iso).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    })
+  }
+
+  function handleWhenModeChange(mode: WhenMode) {
+    setWhenMode(mode)
+    if (mode === 'earlier') {
+      const now = new Date()
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
+      setEventDate(oneHourAgo.toISOString().split('T')[0] ?? '')
+      setEventTime(
+        `${String(oneHourAgo.getHours()).padStart(2, '0')}:${String(oneHourAgo.getMinutes()).padStart(2, '0')}`,
+      )
+    }
   }
 
   function handleSubmitToAgent() {
     const numVal = Number(value)
+    const isoTimestamp =
+      whenMode === 'earlier' && eventDate && eventTime
+        ? new Date(`${eventDate}T${eventTime}:00`).toISOString()
+        : undefined
+    const timeText = isoTimestamp ? ` at ${formatTimeForChat(isoTimestamp)}` : ''
     let message: string
     if (tab === 'insulin') {
-      message = `log ${String(numVal)} units ${insulinType} insulin`
+      message = `log ${String(numVal)} units ${insulinType} insulin${timeText}`
     } else if (tab === 'carbs') {
-      message = `log ${String(numVal)}g carbs${foodDesc ? ` — ${foodDesc}` : ''}`
+      message = `log ${String(numVal)}g carbs${foodDesc ? ` — ${foodDesc}` : ''}${timeText}`
     } else {
-      message = `log ${String(numVal)} minutes ${exerciseType || 'exercise'}`
+      message = `log ${duration || value} minutes ${exerciseType || 'exercise'}${timeText}`
     }
     submitLogMessage(message)
     handleReset()
   }
+
+  const canSubmit =
+    tab === 'exercise'
+      ? (value !== '' && Number(value) > 0) || (duration !== '' && Number(duration) > 0)
+      : value !== '' && Number(value) > 0
 
   return (
     <div className="flex flex-col gap-3">
@@ -148,20 +187,94 @@ export function EventLoggerForm() {
             )}
 
             {tab === 'exercise' && (
-              <div className="flex flex-col gap-1">
-                <label htmlFor="log-activity" className="text-xs text-muted-foreground">
-                  Activity
-                </label>
-                <Input
-                  id="log-activity"
-                  type="text"
-                  value={exerciseType}
-                  onChange={(e) => setExerciseType(e.target.value)}
-                  placeholder="e.g. cycling, running"
-                  className="bg-muted border-border text-sm"
-                />
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="log-activity" className="text-xs text-muted-foreground">
+                    Activity
+                  </label>
+                  <Input
+                    id="log-activity"
+                    type="text"
+                    value={exerciseType}
+                    onChange={(e) => setExerciseType(e.target.value)}
+                    placeholder="e.g. cycling, running"
+                    className="bg-muted border-border text-sm"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="log-duration" className="text-xs text-muted-foreground">
+                    Duration (min)
+                  </label>
+                  <Input
+                    id="log-duration"
+                    type="number"
+                    min="0"
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                    placeholder="e.g. 45"
+                    className="bg-muted border-border text-sm tabular-nums"
+                  />
+                </div>
               </div>
             )}
+
+            <div className="flex flex-col gap-2">
+              <span className="text-xs text-muted-foreground">When?</span>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleWhenModeChange('now')}
+                  className="rounded-md py-1.5 text-xs font-medium transition-colors border"
+                  style={{
+                    backgroundColor: whenMode === 'now' ? '#1a1a1e' : 'transparent',
+                    borderColor: whenMode === 'now' ? '#4a4a4e' : '#3a3a3e',
+                    color: whenMode === 'now' ? '#e5e5e5' : '#6b6b6b',
+                  }}
+                >
+                  Now
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleWhenModeChange('earlier')}
+                  className="rounded-md py-1.5 text-xs font-medium transition-colors border"
+                  style={{
+                    backgroundColor: whenMode === 'earlier' ? '#1a1a1e' : 'transparent',
+                    borderColor: whenMode === 'earlier' ? '#4a4a4e' : '#3a3a3e',
+                    color: whenMode === 'earlier' ? '#e5e5e5' : '#6b6b6b',
+                  }}
+                >
+                  Earlier
+                </button>
+              </div>
+              {whenMode === 'earlier' && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="log-date" className="text-xs text-muted-foreground">
+                      Date
+                    </label>
+                    <Input
+                      id="log-date"
+                      type="date"
+                      value={eventDate}
+                      onChange={(e) => setEventDate(e.target.value)}
+                      className="bg-muted border-border text-sm"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="log-time" className="text-xs text-muted-foreground">
+                      Time
+                    </label>
+                    <Input
+                      id="log-time"
+                      type="time"
+                      value={eventTime}
+                      onChange={(e) => setEventTime(e.target.value)}
+                      className="bg-muted border-border text-sm"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="flex flex-col gap-1">
               <label htmlFor="log-notes" className="text-xs text-muted-foreground">
@@ -185,7 +298,7 @@ export function EventLoggerForm() {
             <Button
               variant="outline"
               size="sm"
-              disabled={value === '' || Number(value) <= 0}
+              disabled={!canSubmit}
               className="w-full text-xs border-border hover:bg-accent"
               onClick={handleSubmitToAgent}
             >
