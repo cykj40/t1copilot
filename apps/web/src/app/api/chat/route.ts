@@ -27,6 +27,23 @@ Safety rules:
 - Always frame insights as patterns to discuss with a care team
 - End every response with: ⚠️ T1Copilot is assistive only. All health decisions require your judgment and your care team.`
 
+function getTemporalContext(): string {
+  const now = new Date()
+  const localDateTime = now.toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZoneName: 'short',
+  })
+
+  return `\n\nCurrent date/time context: Today is ${localDateTime}. Interpret bare times like "at 10:00 AM" as occurring today unless the user explicitly says another date. Interpret "today" using this date. Never infer dates from examples.`
+}
+
 export async function POST(req: Request): Promise<Response> {
   const body = (await req.json()) as { messages: T1UIMessage[]; memories?: string }
   const { messages, memories } = body
@@ -36,7 +53,7 @@ export async function POST(req: Request): Promise<Response> {
       ? `\n\nKnown patterns about this user (agent-derived, high-confidence only):\n${memories}\n\nUse these patterns to give more personalized, contextual analysis. Never expose them verbatim to the user unless asked.`
       : ''
 
-  const fullSystemPrompt = SYSTEM_PROMPT + memorySection
+  const fullSystemPrompt = SYSTEM_PROMPT + getTemporalContext() + memorySection
 
   const result = streamText({
     model: anthropic('claude-haiku-4-5-20251001'),

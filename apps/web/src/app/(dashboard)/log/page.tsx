@@ -24,7 +24,7 @@ function describeEvent(type: string, data: Record<string, unknown>): string {
 
 export default async function LogPage() {
   const now = new Date()
-  const start = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+  const start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
   const timeline = await getEventTimeline(start.toISOString(), now.toISOString())
 
   const events = timeline?.timeline ?? []
@@ -42,11 +42,11 @@ export default async function LogPage() {
 
       <Card className="bg-card border-border">
         <CardContent className="pt-4 pb-3 px-4">
-          <p className="text-xs font-medium text-muted-foreground mb-2">Recent logs</p>
+          <p className="text-xs font-medium text-muted-foreground mb-2">
+            Recent logs — last 7 days
+          </p>
           {events.length === 0 ? (
-            <p className="text-xs text-muted-foreground/60">
-              No events logged in the last 24 hours
-            </p>
+            <p className="text-xs text-muted-foreground/60">No events in the last 7 days</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {events.map((event, i) => {

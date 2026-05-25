@@ -34,6 +34,7 @@ export function EventLoggerForm() {
   const [eventDate, setEventDate] = useState<string>('')
   const [eventTime, setEventTime] = useState<string>('')
   const [duration, setDuration] = useState<string>('')
+  const [submitting, setSubmitting] = useState(false)
 
   const placeholders: Record<Tab, string> = {
     insulin: 'Units (e.g. 3)',
@@ -59,7 +60,10 @@ export function EventLoggerForm() {
   }
 
   function formatTimeForChat(iso: string): string {
-    return new Date(iso).toLocaleTimeString('en-US', {
+    return new Date(iso).toLocaleString('en-US', {
+      month: 'numeric',
+      day: 'numeric',
+      year: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
@@ -79,6 +83,7 @@ export function EventLoggerForm() {
   }
 
   function handleSubmitToAgent() {
+    if (submitting) return
     const numVal = Number(value)
     const isoTimestamp =
       whenMode === 'earlier' && eventDate && eventTime
@@ -93,14 +98,11 @@ export function EventLoggerForm() {
     } else {
       message = `log ${duration || value} minutes ${exerciseType || 'exercise'}${timeText}`
     }
+    setSubmitting(true)
     submitLogMessage(message)
     handleReset()
+    setTimeout(() => setSubmitting(false), 2000)
   }
-
-  const canSubmit =
-    tab === 'exercise'
-      ? (value !== '' && Number(value) > 0) || (duration !== '' && Number(duration) > 0)
-      : value !== '' && Number(value) > 0
 
   return (
     <div className="flex flex-col gap-3">
@@ -298,11 +300,11 @@ export function EventLoggerForm() {
             <Button
               variant="outline"
               size="sm"
-              disabled={!canSubmit}
+              disabled={submitting || !value || Number(value) <= 0}
               className="w-full text-xs border-border hover:bg-accent"
               onClick={handleSubmitToAgent}
             >
-              Use Agent to Log →
+              {submitting ? 'Sending…' : 'Use Agent to Log →'}
             </Button>
           </div>
         </CardContent>
