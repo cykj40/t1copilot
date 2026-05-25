@@ -18,6 +18,15 @@ const TimelineEventSchema = z.object({
   glucoseContext: GlucoseContextSchema,
 })
 
+const SummaryNumberSchema = z.preprocess((value) => {
+  if (typeof value === 'number') return Number.isNaN(value) ? 0 : value
+  if (typeof value === 'string') {
+    const parsed = Number.parseFloat(value)
+    return Number.isNaN(parsed) ? 0 : parsed
+  }
+  return 0
+}, z.number())
+
 const EventTimelineSchema = z.object({
   period: z
     .object({
@@ -27,10 +36,10 @@ const EventTimelineSchema = z.object({
     .optional(),
   summary: z
     .object({
-      totalEvents: z.coerce.number(),
-      totalInsulin: z.coerce.number(),
-      totalCarbs: z.coerce.number(),
-      exerciseSessions: z.coerce.number(),
+      totalEvents: SummaryNumberSchema,
+      totalInsulin: SummaryNumberSchema,
+      totalCarbs: SummaryNumberSchema,
+      exerciseSessions: SummaryNumberSchema,
     })
     .optional(),
   timeline: z.array(TimelineEventSchema),
