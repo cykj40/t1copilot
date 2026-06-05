@@ -40,7 +40,6 @@ const NAV_ITEMS: NavItem[] = [
 interface AppSidebarProps {
   collapsed: boolean
   onToggle: () => void
-  dexcomConnected: boolean
   conversations: StoredConversation[]
   activeConversationId: string | null
   onNewConversation: () => void
@@ -51,7 +50,6 @@ interface AppSidebarProps {
 export function AppSidebar({
   collapsed,
   onToggle,
-  dexcomConnected,
   conversations,
   activeConversationId,
   onNewConversation,
@@ -157,7 +155,7 @@ export function AppSidebar({
           </>
         )}
       </button>
-      {!collapsed && <AgentStatusBar dexcomConnected={dexcomConnected} />}
+      {!collapsed && <AgentStatusBar />}
     </div>
   )
 }

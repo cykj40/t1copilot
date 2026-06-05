@@ -107,4 +107,6 @@ export const pelotonHandlers = [
   }),
 
   http.delete(PELOTON_MCP_ENDPOINT, () => new HttpResponse(null, { status: 200 })),
+
+  http.get(`${PELOTON_MCP_BASE_URL}/health`, () => new HttpResponse(null, { status: 200 })),
 ]

@@ -135,6 +135,8 @@ export const dexcomHandlers = [
   }),
 
   http.delete(MCP_ENDPOINT, () => new HttpResponse(null, { status: 200 })),
+
+  http.get(`${MCP_BASE_URL}/health`, () => new HttpResponse(null, { status: 200 })),
 ]
 
 // ── Per-test override helpers ─────────────────────────────────────────────────

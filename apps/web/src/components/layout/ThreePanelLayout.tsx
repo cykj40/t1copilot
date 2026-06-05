@@ -33,10 +33,9 @@ export function useLogContext(): LogContextValue {
 
 interface ThreePanelLayoutProps {
   children?: React.ReactNode
-  dexcomConnected: boolean
 }
 
-export function ThreePanelLayout({ children, dexcomConnected }: ThreePanelLayoutProps) {
+export function ThreePanelLayout({ children }: ThreePanelLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [artifact, setArtifact] = useState<ArtifactData | null>(null)
   const [artifactWidthPct, setArtifactWidthPct] = useState(ARTIFACT_DEFAULT_PCT)
@@ -151,7 +150,6 @@ export function ThreePanelLayout({ children, dexcomConnected }: ThreePanelLayout
         <AppSidebar
           collapsed={sidebarCollapsed}
           onToggle={() => setSidebarCollapsed((v) => !v)}
-          dexcomConnected={dexcomConnected}
           conversations={conversations}
           activeConversationId={activeConversationId}
           onNewConversation={handleNewConversation}

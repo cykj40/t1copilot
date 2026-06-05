@@ -1,6 +1,8 @@
+import { getMcpServerHealth } from '@/app/api/health/route'
 import { MemoryViewer } from '@/components/settings/MemoryViewer'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { PLACEHOLDER_BASELINE } from '@/lib/placeholder'
+import type { McpServerStatus } from '@/types/agents'
 
 interface ParamRowProps {
   label: string
@@ -24,7 +26,22 @@ function ParamRow({ label, value, unit, description }: ParamRowProps) {
   )
 }
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const health = await getMcpServerHealth()
+
+  const mcpServers: Array<{ name: string; url: string; status: McpServerStatus }> = [
+    {
+      name: 'Dexcom CGM',
+      url: 'dexcom-mcp-server.fly.dev',
+      status: health.dexcom,
+    },
+    {
+      name: 'Peloton',
+      url: 'peloton-mcp-server.fly.dev',
+      status: health.peloton,
+    },
+  ]
+
   return (
     <div className="flex flex-col gap-4 p-4 overflow-y-auto">
       <div>
@@ -75,18 +92,7 @@ export default function SettingsPage() {
           <p className="text-xs font-medium text-foreground">MCP Servers</p>
         </CardHeader>
         <CardContent className="px-4 pb-3">
-          {[
-            {
-              name: 'Dexcom CGM',
-              url: 'dexcom-mcp-server.fly.dev',
-              status: 'disconnected' as const,
-            },
-            {
-              name: 'Peloton',
-              url: 'peloton-mcp-server.fly.dev',
-              status: 'disconnected' as const,
-            },
-          ].map((server) => (
+          {mcpServers.map((server) => (
             <div
               key={server.name}
               className="flex items-center justify-between py-2 border-b border-border last:border-0"

@@ -1,4 +1,7 @@
+'use client'
+
 import { Badge } from '@/components/ui/badge'
+import { useServerHealth } from '@/hooks/useServerHealth'
 import type { AgentStatus, McpServer } from '@/types/agents'
 
 const AGENTS: AgentStatus[] = [
@@ -15,18 +18,20 @@ const STATUS_COLORS: Record<string, string> = {
   error: '#ef4444',
 }
 
-interface AgentStatusBarProps {
-  dexcomConnected?: boolean
-}
+export function AgentStatusBar() {
+  const { dexcom, peloton } = useServerHealth()
 
-export function AgentStatusBar({ dexcomConnected = false }: AgentStatusBarProps) {
   const MCP_SERVERS: McpServer[] = [
     {
       name: 'Dexcom',
-      status: dexcomConnected ? 'connected' : 'disconnected',
+      status: dexcom,
       url: 'https://dexcom-mcp-server.fly.dev',
     },
-    { name: 'Peloton', status: 'disconnected', url: 'https://peloton-mcp-server.fly.dev' },
+    {
+      name: 'Peloton',
+      status: peloton,
+      url: 'https://peloton-mcp-server.fly.dev',
+    },
   ]
 
   return (
