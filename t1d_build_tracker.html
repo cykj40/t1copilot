@@ -629,6 +629,10 @@
           text: "System prompt updated: agent proactively surfaces patterns when user asks for weekly/monthly summary",
           done: false,
         },
+        {
+          text: "Migrate memory-store.ts from localStorage to agent_insights Neon table + PGVector semantic retrieval — inject into system prompt via buimoryContext()",
+          done: false,
+        },
       ],
       notes:
         "Synthesis agent — calls the most tools of any priority. Key Dexcom tools: analyze_trends, detect_parameter_drift, get_adaptive_insights, get_insulin_events, get_carb_events, get_exercise_events (all UNWIRED — see §4.1). Key Peloton tools: peloton_get_discipline_insights, peloton_detect_hypoglycemia_risk, peloton_muscle_activity, peloton_training_balance. Memory persistence moves from localStorage to Neon agent_insights table.",
@@ -714,6 +718,10 @@
   ];
 
   const SESSIONS = [
+    {
+      date: "June 4, 2026",
+      text: "MCP server auth hardened: Dexcom tokens migrated to Turso (single source of truth), env bootstrap tokens removed from Fly. Peloton Auth0 OAuth refresh implemented after /auth/login Cloudflare lockdown; one-time browser token bootstrap, auto-refresh with rotation. Both servers verified in production. Real MCP health check route added (/api/health), hardcoded status badges replaced with live polling (useServerHealth hook, 30s poll). Biome lint added to dexcom-mcp-server and peloton-mcp-server. Model pin updated: claude-sonnet-4-5-20250929 → claude-sonnet-4-6 (June 15 retirement). 60 tests green.",
+    },
     {
       date: "May 25, 2026",
       text: "Architecture decision locked: Vercel AI SDK is the single runtime. Considered reverting fully to LangGraph for the 'done right' factor; rejected — LangGraph's durable checkpointing / resumable runs / interrupt() HITL are real but UNUSED by the current request path, and a revert means rewriting P4–P7 plus rebuilding the streaming generative-artifact UX by hand. Resolution to the two-brain risk: FREEZE packages/agents rather than sync or fully delete it. Rule: build all new agent behavior (P8–P10) as AI SDK tools on /api/chat; never edit packages/agents to add features. LangGraph gets reconsidered only at the A2A stage, per-service, where a specialist genuinely needs durable resumable state — not app-wide. A2A remains framework-agnostic so this choice doesn't close that door. Docs updated to v1.4 (instructions §2.2 decision record + §7.3 reframed for tool-based agents + packages/agents marked FROZEN).",
