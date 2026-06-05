@@ -1,0 +1,826 @@
+<h2 class="sr-only">
+  T1Copilot build tracker — priority list with completion status
+</h2>
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    font-family: var(--font-sans);
+    padding: 0;
+  }
+  .wrap {
+    padding: 1rem 0;
+  }
+  .header {
+    padding-bottom: 1rem;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+    margin-bottom: 1.25rem;
+  }
+  .header h1 {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+  .header p {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    margin-top: 4px;
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 1.25rem;
+  }
+  .stat {
+    background: var(--color-background-secondary);
+    border-radius: var(--border-radius-md);
+    padding: 0.75rem;
+    text-align: center;
+  }
+  .stat-n {
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+  .stat-l {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    margin-top: 2px;
+  }
+  .prog-wrap {
+    margin-bottom: 1.25rem;
+  }
+  .prog-bar {
+    height: 6px;
+    background: var(--color-border-tertiary);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .prog-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: #1d9e75;
+    transition: width 0.3s;
+  }
+  .prog-label {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    display: flex;
+    justify-content: space-between;
+  }
+  .priority {
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg);
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+  .p-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    user-select: none;
+    background: var(--color-background-primary);
+  }
+  .p-header:hover {
+    background: var(--color-background-secondary);
+  }
+  .p-num {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    min-width: 20px;
+  }
+  .p-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    flex: 1;
+  }
+  .badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  .badge-done {
+    background: #e1f5ee;
+    color: #0f6e56;
+  }
+  .badge-inprogress {
+    background: #faeeda;
+    color: #854f0b;
+  }
+  .badge-todo {
+    background: var(--color-background-secondary);
+    color: var(--color-text-secondary);
+  }
+  .badge-blocked {
+    background: #fcebeb;
+    color: #a32d2d;
+  }
+  .chevron {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    transition: transform 0.2s;
+  }
+  .chevron.open {
+    transform: rotate(180deg);
+  }
+  .p-body {
+    border-top: 0.5px solid var(--color-border-tertiary);
+    padding: 0.75rem 1rem;
+    background: var(--color-background-secondary);
+  }
+  .subtasks {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .subtask {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+  }
+  .subtask.done {
+    color: var(--color-text-tertiary);
+    text-decoration: line-through;
+  }
+  .chk {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid var(--color-border-secondary);
+    background: var(--color-background-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .chk.done {
+    background: #1d9e75;
+    border-color: #1d9e75;
+  }
+  .chk.done::after {
+    content: "✓";
+    font-size: 9px;
+    color: #fff;
+  }
+  .notes {
+    font-size: 11px;
+    color: var(--color-text-tertiary);
+    border-top: 0.5px solid var(--color-border-tertiary);
+    padding-top: 6px;
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .sessions {
+    margin-top: 1.25rem;
+    border-top: 0.5px solid var(--color-border-tertiary);
+    padding-top: 1rem;
+  }
+  .sessions h2 {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+  }
+  .session {
+    padding: 0.5rem 0;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+  }
+  .session:last-child {
+    border-bottom: none;
+  }
+  .session-date {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+  }
+  .session-text {
+    font-size: 12px;
+    color: var(--color-text-primary);
+    margin-top: 3px;
+    line-height: 1.5;
+  }
+</style>
+
+<div class="wrap">
+  <div class="header">
+    <h1>T1Copilot — Build Tracker</h1>
+    <p>TypeScript · Next.js · Vercel AI SDK · Dexcom + Peloton MCP</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-n" id="s-done">0</div>
+      <div class="stat-l">Done</div>
+    </div>
+    <div class="stat">
+      <div class="stat-n" id="s-ip">0</div>
+      <div class="stat-l">In progress</div>
+    </div>
+    <div class="stat">
+      <div class="stat-n" id="s-todo">0</div>
+      <div class="stat-l">To do</div>
+    </div>
+    <div class="stat">
+      <div class="stat-n" id="s-total">0</div>
+      <div class="stat-l">Total</div>
+    </div>
+  </div>
+
+  <div class="prog-wrap">
+    <div class="prog-label">
+      <span>Overall progress</span><span id="pct">0%</span>
+    </div>
+    <div class="prog-bar">
+      <div class="prog-fill" id="pfill" style="width: 0%"></div>
+    </div>
+  </div>
+
+  <div id="priorities"></div>
+
+  <div class="sessions">
+    <h2>Session log</h2>
+    <div id="session-log"></div>
+  </div>
+</div>
+
+<script>
+  const PRIORITIES = [
+    {
+      id: 1,
+      title: "Audit Dexcom MCP V2 endpoints",
+      status: "done",
+      subtasks: [
+        {
+          text: "Identify deprecated V2 routes in dexcom-mcp-server",
+          done: true,
+        },
+        { text: "Map to V3 equivalents", done: true },
+        { text: "Document migration plan", done: true },
+      ],
+      notes: "Complete. All deprecated routes identified and migrated.",
+    },
+    {
+      id: 2,
+      title: "Drizzle ORM schema — Neon Postgres",
+      status: "done",
+      subtasks: [
+        {
+          text: "users, glucose_readings, insulin_events, carb_events",
+          done: true,
+        },
+        { text: "exercise_events, workout_glucose_correlations", done: true },
+        { text: "adaptive_observations, agent_insights", done: true },
+        { text: "research_cache + PGVector embeddings", done: true },
+        { text: "lab_documents, meal_photos, apple_health_raw", done: true },
+        { text: "Migrations run clean on Neon", done: true },
+      ],
+      notes: "All tables generated. Migrations run clean.",
+    },
+    {
+      id: 3,
+      title: "LangGraph agent graph — Orchestrator + 5 agents",
+      status: "done",
+      subtasks: [
+        { text: "Orchestrator agent — intent routing", done: true },
+        { text: "Glucose Agent — CGM analysis tools", done: true },
+        { text: "Exercise Agent — Peloton + hypo risk", done: true },
+        { text: "Modeling Agent — predict glucose impact", done: true },
+        { text: "Event Logger Agent — log insulin/carbs/exercise", done: true },
+        { text: "Insight Agent — synthesis + drift detection", done: true },
+        { text: "Research Agent — deferred to P10", done: false },
+        { text: "State machine wiring + shared state types", done: true },
+      ],
+      notes:
+        "Built May 17–18. packages/agents contains the full LangGraph graph as reference implementation. FROZEN as of May 25 — the AI SDK route (/api/chat) is the active shipping path. packages/agents serves as reference logic and A2A seed only. Do not add features here.",
+    },
+    {
+      id: 4,
+      title: "Next.js app shell + generative artifact system",
+      status: "done",
+      subtasks: [
+        { text: "3-panel IDE layout — sidebar / chat / artifact", done: true },
+        {
+          text: "AI SDK v6 streamText + 5 tools with Zod inputSchema",
+          done: true,
+        },
+        {
+          text: "5 artifact types: glucose chart, workout, weekly summary, doctor checklist, confirm log",
+          done: true,
+        },
+        {
+          text: "ArtifactRouter + AgentChat tool invocation detection",
+          done: true,
+        },
+        { text: "All 8 route pages with placeholder content", done: true },
+        { text: "AgentStatusBar — Dexcom/Peloton status dots", done: true },
+        {
+          text: "Artifact panel demand-driven — hidden on load, mounts on tool output",
+          done: true,
+        },
+        { text: "Zero TS errors, zero Biome lint errors", done: true },
+      ],
+      notes: "Fully complete May 20. Artifact panel demand-driven.",
+    },
+    {
+      id: 5,
+      title: "Wire Glucose Agent to Dexcom MCP — real-time dashboard",
+      status: "done",
+      subtasks: [
+        {
+          text: "StreamableHTTP MCP client with Bearer auth + 30s timeout",
+          done: true,
+        },
+        {
+          text: "Zod schemas matching actual Dexcom V3 response shapes",
+          done: true,
+        },
+        {
+          text: "getLatestGlucose, getGlucoseRange, getDailySummary wrappers",
+          done: true,
+        },
+        { text: "Dashboard live glucose card + trend arrow", done: true },
+        {
+          text: "/glucose page: 24h chart + 7d/14d/30d date range switcher",
+          done: true,
+        },
+        { text: "render_glucose_chart tool calls live Dexcom MCP", done: true },
+        {
+          text: "MSW test suite: 56 assertions across 4 test files",
+          done: true,
+        },
+        { text: "pnpm test:safety CI gate passing", done: true },
+      ],
+      notes: "Live data flowing. 56 tests green.",
+    },
+    {
+      id: "5b",
+      title: "UI sprint — artifact panel + conversations + memory",
+      status: "done",
+      subtasks: [
+        {
+          text: "ArtifactPanel: Preview/Source tabs, copy feedback, close button",
+          done: true,
+        },
+        {
+          text: "CSV export for glucose chart, PDF export via window.print()",
+          done: true,
+        },
+        {
+          text: "Slide-in animation (animate-in slide-in-from-right)",
+          done: true,
+        },
+        {
+          text: "render_markdown_doc artifact type — renders via react-markdown",
+          done: true,
+        },
+        {
+          text: "render_html_report artifact type — sandboxed iframe",
+          done: true,
+        },
+        {
+          text: "Both new types in ArtifactRouter, ArtifactData, T1Tools, toolResultToArtifact",
+          done: true,
+        },
+        {
+          text: "localStorage conversation history — list, new, select, delete",
+          done: true,
+        },
+        {
+          text: "Persisted messages restored on conversation switch via initialMessages",
+          done: true,
+        },
+        { text: "useConversations + useMessagePersistence hooks", done: true },
+        {
+          text: "localStorage memory store — load/save/delete/clear/buildMemoryContext",
+          done: true,
+        },
+        {
+          text: "body.memories injected via DefaultChatTransport.prepareSendMessagesRequest",
+          done: true,
+        },
+        {
+          text: "MemoryViewer in /settings — read-only, per-item delete, clear-all",
+          done: true,
+        },
+        {
+          text: "biome check . / pnpm typecheck / 56 tests all green",
+          done: true,
+        },
+      ],
+      notes:
+        "Implemented May 23. All verification passed. Dev server running at localhost:3000.",
+    },
+    {
+      id: 6,
+      title: "Wire Exercise Agent to Peloton MCP — workout correlation UI",
+      status: "done",
+      subtasks: [
+        {
+          text: "Probe Peloton MCP transport shape (StreamableHTTP JSON-RPC — verified)",
+          done: true,
+        },
+        {
+          text: "callPelotonTool() client in packages/mcp-clients/src/peloton.ts",
+          done: true,
+        },
+        {
+          text: "Typed Zod wrappers: peloton_get_workouts, peloton_sync_workouts",
+          done: true,
+        },
+        {
+          text: "peloton_analyze_glucose_correlation, peloton_detect_hypoglycemia_risk",
+          done: true,
+        },
+        {
+          text: "/workout page: live data, correlation cards per workout",
+          done: true,
+        },
+        {
+          text: "render_workout_correlation tool calls live Peloton MCP",
+          done: true,
+        },
+        {
+          text: "MSW handlers for Peloton MCP + test suite — 30 tests",
+          done: true,
+        },
+        {
+          text: "AgentStatusBar: Peloton shows green when connected",
+          done: true,
+        },
+      ],
+      notes:
+        "Complete May 23. 5 Zod schemas, PelotonMcpError, extractText/extractJson hardened (isError guard + JSON.parse try/catch). Live workout correlation + hypo risk alert banner + discipline insights on /workout page. 32 tests. Zero TS errors.",
+    },
+    {
+      id: 7,
+      title: "Event Logger UI + Event Logger Agent",
+      status: "inprogress",
+      subtasks: [
+        {
+          text: "confirm_log_event tool in /api/chat — pending_confirmation, never auto-logs",
+          done: true,
+        },
+        {
+          text: "ConfirmLogEventArtifact — confirm/cancel card with logged/cancelled states",
+          done: true,
+        },
+        {
+          text: "subtype + food_description threaded through artifact types, /api/chat schema, system prompt",
+          done: true,
+        },
+        {
+          text: "/api/log POST route — Zod-validated, dispatches to callDexcomTool (log_insulin/carbs/exercise)",
+          done: true,
+        },
+        {
+          text: "ConfirmLogEventArtifact write flow: Logging… state → POST /api/log → success/error + router.refresh()",
+          done: true,
+        },
+        {
+          text: "getEventTimeline server action in actions/dexcom.ts (Zod-validated)",
+          done: true,
+        },
+        {
+          text: "/log page → async server component, live 24h timeline + empty state",
+          done: true,
+        },
+        {
+          text: "AgentChat forwardRef + useImperativeHandle exposes sendMessage(text)",
+          done: true,
+        },
+        {
+          text: "LogContext in ThreePanelLayout; EventLoggerForm injects message into chat (Option A)",
+          done: true,
+        },
+        {
+          text: "EventLoggerForm: insulin-type toggle, food field, activity field",
+          done: true,
+        },
+        {
+          text: "EventLoggerForm: 'When?' time picker (Now / Earlier toggle + date+time inputs) on all 3 tabs",
+          done: false,
+        },
+        {
+          text: "EventLoggerForm: duration field on exercise tab",
+          done: false,
+        },
+        {
+          text: "timestamp threaded through confirm_log_event tool schema → ConfirmLogEventArtifact → /api/log → callDexcomTool",
+          done: false,
+        },
+      ],
+      notes:
+        "Core write flow complete May 25. Three subtasks remaining: timestamp/duration fields on the form, threading timestamp through the full confirm→log pipeline. These were scoped after P7 was marked done — treating as P7 tail work before starting P8.",
+    },
+    {
+      id: 8,
+      title: "Modeling Agent + prediction UI",
+      status: "todo",
+      subtasks: [
+        {
+          text: "Build on AI SDK route (/api/chat) — NOT packages/agents (frozen)",
+          done: false,
+        },
+        {
+          text: "render_prediction artifact type — prediction card with confidence interval + timeline",
+          done: false,
+        },
+        {
+          text: "predict_glucose_impact tool wired: action_type (insulin|carbs|both), insulin_units?, carb_grams?, current_glucose?",
+          done: false,
+        },
+        {
+          text: "get_baseline_parameters tool wired — surfaces ISF/ICR/basal read-only in artifact",
+          done: false,
+        },
+        {
+          text: "compare_expected_vs_actual tool wired — event_type, event_timestamp, event_value, current_glucose, window_hours?",
+          done: false,
+        },
+        {
+          text: "get_glucose_statistics tool wired — hours param, powers stats cards more accurately than get_glucose_range",
+          done: false,
+        },
+        {
+          text: "/settings page: baseline parameters card reads from live get_baseline_parameters (replace placeholder)",
+          done: false,
+        },
+        {
+          text: "System prompt updated: agent calls predict_glucose_impact when user asks about dosing impact",
+          done: false,
+        },
+        {
+          text: "MSW mocks for new Dexcom modeling tools + tests",
+          done: false,
+        },
+      ],
+      notes:
+        "Builds on AI SDK route only. Key MCP tools: predict_glucose_impact, get_baseline_parameters, compare_expected_vs_actual, get_glucose_statistics (all UNWIRED — see §4.1 of instructions). Safety rule: predictions always show confidence ranges and carry medical disclaimer. Agent never recommends a specific dose — it predicts impact only.",
+    },
+    {
+      id: 9,
+      title: "Insight Agent + synthesis feed",
+      status: "todo",
+      subtasks: [
+        {
+          text: "Build on AI SDK route (/api/chat) — NOT packages/agents (frozen)",
+          done: false,
+        },
+        {
+          text: "render_insight_summary artifact type — weekly pattern card with confidence scores",
+          done: false,
+        },
+        {
+          text: "analyze_trends tool wired — days param, surfaces post-meal spikes, overnight patterns",
+          done: false,
+        },
+        {
+          text: "detect_parameter_drift tool wired — flags when ISF/ICR appears to have shifted",
+          done: false,
+        },
+        {
+          text: "get_adaptive_insights tool wired — how predictions compare to actuals over time",
+          done: false,
+        },
+        {
+          text: "peloton_get_discipline_insights tool wired — per-discipline glucose drop averages",
+          done: false,
+        },
+        {
+          text: "peloton_detect_hypoglycemia_risk tool wired — delayed hypo risk scan",
+          done: false,
+        },
+        {
+          text: "get_insulin_events / get_carb_events / get_exercise_events wired for pattern context",
+          done: false,
+        },
+        {
+          text: "Weekly summary synthesis — agent calls multiple tools, composes render_insight_summary",
+          done: false,
+        },
+        {
+          text: "Memory migrated from localStorage to Neon agent_insights table via Drizzle",
+          done: false,
+        },
+        {
+          text: "PGVector semantic retrieval for memory injection into system prompt",
+          done: false,
+        },
+        {
+          text: "/insights page InsightFeed wired to live agent output (replace mock data)",
+          done: false,
+        },
+        {
+          text: "System prompt updated: agent proactively surfaces patterns when user asks for weekly/monthly summary",
+          done: false,
+        },
+      ],
+      notes:
+        "Synthesis agent — calls the most tools of any priority. Key Dexcom tools: analyze_trends, detect_parameter_drift, get_adaptive_insights, get_insulin_events, get_carb_events, get_exercise_events (all UNWIRED — see §4.1). Key Peloton tools: peloton_get_discipline_insights, peloton_detect_hypoglycemia_risk, peloton_muscle_activity, peloton_training_balance. Memory persistence moves from localStorage to Neon agent_insights table.",
+    },
+    {
+      id: 10,
+      title: "Research Agent — Google Deep Research API",
+      status: "todo",
+      subtasks: [
+        {
+          text: "Build on AI SDK route (/api/chat) — NOT packages/agents (frozen)",
+          done: false,
+        },
+        {
+          text: "render_research_results artifact type — research card with source, summary, relevance tags",
+          done: false,
+        },
+        {
+          text: "Google Deep Research API integration — AI SDK tool that delegates to Gemini deep research",
+          done: false,
+        },
+        {
+          text: "research_cache table write via Drizzle (Neon) — store query, source_url, content, agent_summary",
+          done: false,
+        },
+        {
+          text: "PGVector embedding of research results for semantic retrieval",
+          done: false,
+        },
+        {
+          text: "/research page wired to live agent output (replace mock results)",
+          done: false,
+        },
+        {
+          text: "System prompt updated: agent calls research tool when user asks about medical literature or evidence",
+          done: false,
+        },
+        {
+          text: "Medical disclaimer on all research outputs — 'discuss findings with your care team'",
+          done: false,
+        },
+      ],
+      notes:
+        "Research agent is the only one that calls an external LLM (Gemini Deep Research). All results cached in Neon research_cache + PGVector for semantic re-use. Medical disclaimer mandatory on all outputs.",
+    },
+    {
+      id: 11,
+      title: "Laminar eval suite (@lmnr-ai/lmnr)",
+      status: "todo",
+      subtasks: [
+        {
+          text: "packages/evals scaffold: data/, evaluators.ts, executors.ts, types.ts",
+          done: false,
+        },
+        {
+          text: "Layer 1 — tool selection evals: does the agent call the right AI SDK tool for a given query?",
+          done: false,
+        },
+        {
+          text: "Layer 2 — per-tool behavior evals with mocked MCP responses (deterministic)",
+          done: false,
+        },
+        {
+          text: "Layer 3 — safety negative evals (CI gate): HITL not bypassed, no auto-log, no ISF/ICR mutation",
+          done: false,
+        },
+        {
+          text: "Layer 4 — LLM judge: output quality + T1D safety/HITL judge (gpt-5.1 as evaluator)",
+          done: false,
+        },
+        {
+          text: "pnpm eval / pnpm eval:safety scripts wired; LMNR_API_KEY in env",
+          done: false,
+        },
+        {
+          text: "safety.eval.ts blocks CI on failure — gates on §9.2 medical safety rules",
+          done: false,
+        },
+      ],
+      notes:
+        "Evals run against the AI SDK route tools, not the frozen LangGraph graph. Safety eval (Layer 3) is the most critical — it verifies HITL invariants that the existing vitest safety suite covers at unit level. Laminar extends that to integration-level agent behavior with realistic inputs. pnpm test:safety (vitest) remains the fast CI gate; Laminar evals are the deeper behavioral gate.",
+    },
+  ];
+
+  const SESSIONS = [
+    {
+      date: "May 25, 2026",
+      text: "Architecture decision locked: Vercel AI SDK is the single runtime. Considered reverting fully to LangGraph for the 'done right' factor; rejected — LangGraph's durable checkpointing / resumable runs / interrupt() HITL are real but UNUSED by the current request path, and a revert means rewriting P4–P7 plus rebuilding the streaming generative-artifact UX by hand. Resolution to the two-brain risk: FREEZE packages/agents rather than sync or fully delete it. Rule: build all new agent behavior (P8–P10) as AI SDK tools on /api/chat; never edit packages/agents to add features. LangGraph gets reconsidered only at the A2A stage, per-service, where a specialist genuinely needs durable resumable state — not app-wide. A2A remains framework-agnostic so this choice doesn't close that door. Docs updated to v1.4 (instructions §2.2 decision record + §7.3 reframed for tool-based agents + packages/agents marked FROZEN).",
+    },
+    {
+      date: "May 25, 2026",
+      text: "P7 complete on the Vercel AI SDK path. Full HITL event-logging write flow live: EventLoggerForm injects a natural-language message into the chat (Option A, via LogContext + AgentChat forwardRef/useImperativeHandle sendMessage), orchestrator classifies log_event, confirm_log_event surfaces ConfirmLogEventArtifact, Confirm POSTs to new /api/log route which dispatches callDexcomTool(log_insulin/log_carbs/log_exercise), then router.refresh() updates the live /log timeline. New files: app/api/log/route.ts (Zod-validated, 502 on error, no credential leakage), actions/dexcom.ts (getEventTimeline). subtype + food_description threaded through artifact types, /api/chat schema, and system prompt. /log is now an async server component with a 24h live timeline + empty state. Decision logged: write path runs through the AI SDK route, not the LangGraph graph — that convergence is deferred. Known mismatch left untouched: eventLogger.ts LangGraph enum 'long' vs MCP 'long_acting'.",
+    },
+    {
+      date: "May 23, 2026",
+      text: "Project review + doc reconciliation. Verified codebase against instructions v1.1. Corrected P7 from 'to do' → 'in progress' (eventLogger agent node, confirm_log_event tool, and ConfirmLogEventArtifact are built; remaining work is live MCP writes + form submit + /log timeline). Added P11 (Laminar eval suite) to match instructions §10. Flagged stack drift in the instructions doc to fix: Biome (not ESLint/Prettier), pnpm+Turborepo monorepo (not flat src/), no Vite (Next build), AI SDK runs the web chat while LangChain/LangGraph live in packages/agents, broader Neon schema than §5.1 lists (labs, meals, apple_health, embeddings), and stale claude-sonnet-4-5-20250929 string in insight.ts.",
+    },
+    {
+      date: "May 23, 2026",
+      text: "P6 complete. Peloton MCP client built: 5 Zod schemas, callPelotonTool(), PelotonMcpError, extractText/extractJson hardened (isError guard + JSON.parse try/catch for plain-text error strings). /workout page live: correlation cards, hypo risk alert banner, discipline insights. render_workout_correlation wired to live Dexcom + Peloton MCP. 32 MSW tests. GlucoseWindow, HypoRisk, WorkoutCorrelation, DisciplineInsight types added. Zero TS errors across all 6 packages.",
+    },
+    {
+      date: "May 23, 2026",
+      text: "UI sprint complete. Rebuilt ArtifactPanel with Preview/Source tabs, copy feedback, CSV/PDF export, slide-in animation. Added render_markdown_doc and render_html_report artifact types. Added localStorage conversation history with sidebar list, new/select/delete, message persistence. Added memory foundation: store, system prompt injection, MemoryViewer in /settings. biome · typecheck · 56 tests all green.",
+    },
+    {
+      date: "May 19–20, 2026",
+      text: "P5 complete. Live Dexcom MCP data flowing: dashboard glucose card, /glucose page with date range chart. MSW test suite: 56 assertions across 4 test files. Auth resolved (DEXCOM_MCP_AUTH_TOKEN via Fly secret). Phantom artifact panel fixed. Double-submit blocked. UI-fix sprint: system prompt enforces tool calls, react-markdown rendering, AI SDK v6 DefaultChatTransport.",
+    },
+    {
+      date: "May 17–18, 2026",
+      text: "Sessions 1–3. Built progress tracker. P1 (Dexcom V2 audit), P2 (Drizzle schema + Neon migrations), P3 (LangGraph agent graph: 6 nodes), P4 (Next.js app shell: 3-panel IDE layout, AI SDK v6 generative artifact system, all 8 route pages). IDE layout chosen over dashboard. Zero TS errors, zero Biome lint.",
+    },
+  ];
+
+  function badgeClass(s) {
+    if (s === "done") return "badge badge-done";
+    if (s === "inprogress") return "badge badge-inprogress";
+    if (s === "blocked") return "badge badge-blocked";
+    return "badge badge-todo";
+  }
+  function badgeLabel(s) {
+    if (s === "done") return "Done";
+    if (s === "inprogress") return "In progress";
+    if (s === "blocked") return "Blocked";
+    return "To do";
+  }
+
+  const state = { expanded: {} };
+
+  function render() {
+    const el = document.getElementById("priorities");
+    el.innerHTML = "";
+    PRIORITIES.forEach((p) => {
+      const open = !!state.expanded[p.id];
+      const div = document.createElement("div");
+      div.className = "priority";
+      div.innerHTML = `
+      <div class="p-header" data-id="${p.id}">
+        <span class="p-num">P${p.id}</span>
+        <span class="p-title">${p.title}</span>
+        <span class="${badgeClass(p.status)}">${badgeLabel(p.status)}</span>
+        <span class="chevron ${open ? "open" : ""}">▾</span>
+      </div>
+      ${
+        open
+          ? `<div class="p-body">
+        <div class="subtasks">${p.subtasks
+          .map(
+            (s) => `
+          <div class="subtask ${s.done ? "done" : ""}">
+            <div class="chk ${s.done ? "done" : ""}"></div>
+            <span>${s.text}</span>
+          </div>`,
+          )
+          .join("")}
+        </div>
+        ${p.notes ? `<div class="notes">${p.notes}</div>` : ""}
+      </div>`
+          : ""
+      }
+    `;
+      div.querySelector(".p-header").addEventListener("click", () => {
+        state.expanded[p.id] = !state.expanded[p.id];
+        render();
+      });
+      el.appendChild(div);
+    });
+    const done = PRIORITIES.filter((p) => p.status === "done").length;
+    const ip = PRIORITIES.filter((p) => p.status === "inprogress").length;
+    const todo = PRIORITIES.filter(
+      (p) => p.status === "todo" || p.status === "blocked",
+    ).length;
+    const total = PRIORITIES.length;
+    const pct = Math.round((done / total) * 100);
+    document.getElementById("s-done").textContent = done;
+    document.getElementById("s-ip").textContent = ip;
+    document.getElementById("s-todo").textContent = todo;
+    document.getElementById("s-total").textContent = total;
+    document.getElementById("pct").textContent = `${pct}%`;
+    document.getElementById("pfill").style.width = `${pct}%`;
+
+    const sl = document.getElementById("session-log");
+    sl.innerHTML = SESSIONS.map(
+      (s) => `
+    <div class="session">
+      <div class="session-date">${s.date}</div>
+      <div class="session-text">${s.text}</div>
+    </div>`,
+    ).join("");
+  }
+
+  state.expanded[7] = true;
+  render();
+</script>
