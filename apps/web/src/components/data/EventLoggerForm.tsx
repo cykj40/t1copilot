@@ -31,9 +31,9 @@ export function EventLoggerForm() {
   const [foodDesc, setFoodDesc] = useState<string>('')
   const [exerciseType, setExerciseType] = useState<string>('')
   const [whenMode, setWhenMode] = useState<WhenMode>('now')
-  const [eventDate, setEventDate] = useState<string>('')
-  const [eventTime, setEventTime] = useState<string>('')
-  const [duration, setDuration] = useState<string>('')
+  const [customDate, setCustomDate] = useState<string>('')
+  const [customTime, setCustomTime] = useState<string>('')
+  const [durationMinutes, setDurationMinutes] = useState<number | undefined>(undefined)
   const [submitting, setSubmitting] = useState(false)
 
   const placeholders: Record<Tab, string> = {
@@ -54,49 +54,50 @@ export function EventLoggerForm() {
     setFoodDesc('')
     setExerciseType('')
     setWhenMode('now')
-    setEventDate('')
-    setEventTime('')
-    setDuration('')
+    setCustomDate('')
+    setCustomTime('')
+    setDurationMinutes(undefined)
   }
 
   function formatTimeForChat(iso: string): string {
-    return new Date(iso).toLocaleString('en-US', {
-      month: 'numeric',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    })
+    return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
 
   function handleWhenModeChange(mode: WhenMode) {
     setWhenMode(mode)
     if (mode === 'earlier') {
       const now = new Date()
-      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
-      setEventDate(oneHourAgo.toISOString().split('T')[0] ?? '')
-      setEventTime(
-        `${String(oneHourAgo.getHours()).padStart(2, '0')}:${String(oneHourAgo.getMinutes()).padStart(2, '0')}`,
+      setCustomDate(now.toISOString().split('T')[0] ?? '')
+      setCustomTime(
+        `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
       )
     }
   }
 
+  function canSubmit(): boolean {
+    if (tab === 'exercise') {
+      return exerciseType.trim().length > 0
+    }
+    const numVal = Number(value)
+    return numVal > 0
+  }
+
   function handleSubmitToAgent() {
-    if (submitting) return
+    if (submitting || !canSubmit()) return
     const numVal = Number(value)
     const isoTimestamp =
-      whenMode === 'earlier' && eventDate && eventTime
-        ? new Date(`${eventDate}T${eventTime}:00`).toISOString()
+      whenMode === 'earlier' && customDate && customTime
+        ? new Date(`${customDate}T${customTime}`).toISOString()
         : undefined
     const timeText = isoTimestamp ? ` at ${formatTimeForChat(isoTimestamp)}` : ''
     let message: string
     if (tab === 'insulin') {
-      message = `log ${String(numVal)} units ${insulinType} insulin${timeText}`
+      message = `Log ${String(numVal)}u ${insulinType} insulin${timeText}`
     } else if (tab === 'carbs') {
-      message = `log ${String(numVal)}g carbs${foodDesc ? ` — ${foodDesc}` : ''}${timeText}`
+      message = `Log ${String(numVal)}g carbs${foodDesc ? ` — ${foodDesc}` : ''}${timeText}`
     } else {
-      message = `log ${duration || value} minutes ${exerciseType || 'exercise'}${timeText}`
+      const durationText = durationMinutes !== undefined ? `${String(durationMinutes)} min ` : ''
+      message = `Log ${durationText}${exerciseType}${timeText}`
     }
     setSubmitting(true)
     submitLogMessage(message)
@@ -131,23 +132,25 @@ export function EventLoggerForm() {
       <Card className="bg-card border-border">
         <CardContent className="pt-4 pb-4 px-4">
           <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1">
-              <label htmlFor="log-value" className="text-xs text-muted-foreground">
-                Amount ({units[tab]})
-              </label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="log-value"
-                  type="number"
-                  min="0"
-                  value={value}
-                  onChange={(e) => setValue(e.target.value)}
-                  placeholder={placeholders[tab]}
-                  className="flex-1 bg-muted border-border text-sm tabular-nums"
-                />
-                <span className="text-xs text-muted-foreground shrink-0">{units[tab]}</span>
+            {tab !== 'exercise' && (
+              <div className="flex flex-col gap-1">
+                <label htmlFor="log-value" className="text-xs text-muted-foreground">
+                  Amount ({units[tab]})
+                </label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="log-value"
+                    type="number"
+                    min="0"
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    placeholder={placeholders[tab]}
+                    className="flex-1 bg-muted border-border text-sm tabular-nums"
+                  />
+                  <span className="text-xs text-muted-foreground shrink-0">{units[tab]}</span>
+                </div>
               </div>
-            </div>
+            )}
 
             {tab === 'insulin' && (
               <div className="flex flex-col gap-1">
@@ -210,9 +213,12 @@ export function EventLoggerForm() {
                   <Input
                     id="log-duration"
                     type="number"
-                    min="0"
-                    value={duration}
-                    onChange={(e) => setDuration(e.target.value)}
+                    min="1"
+                    value={durationMinutes ?? ''}
+                    onChange={(e) => {
+                      const next = e.target.value
+                      setDurationMinutes(next === '' ? undefined : Number(next))
+                    }}
                     placeholder="e.g. 45"
                     className="bg-muted border-border text-sm tabular-nums"
                   />
@@ -257,8 +263,8 @@ export function EventLoggerForm() {
                     <Input
                       id="log-date"
                       type="date"
-                      value={eventDate}
-                      onChange={(e) => setEventDate(e.target.value)}
+                      value={customDate}
+                      onChange={(e) => setCustomDate(e.target.value)}
                       className="bg-muted border-border text-sm"
                     />
                   </div>
@@ -269,8 +275,8 @@ export function EventLoggerForm() {
                     <Input
                       id="log-time"
                       type="time"
-                      value={eventTime}
-                      onChange={(e) => setEventTime(e.target.value)}
+                      value={customTime}
+                      onChange={(e) => setCustomTime(e.target.value)}
                       className="bg-muted border-border text-sm"
                     />
                   </div>
@@ -300,7 +306,7 @@ export function EventLoggerForm() {
             <Button
               variant="outline"
               size="sm"
-              disabled={submitting || !value || Number(value) <= 0}
+              disabled={submitting || !canSubmit()}
               className="w-full text-xs border-border hover:bg-accent"
               onClick={handleSubmitToAgent}
             >

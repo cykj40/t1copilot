@@ -23,12 +23,25 @@ const EVENT_LABELS: Record<string, string> = {
   exercise: 'Exercise Session',
 }
 
+function formatEventTimestamp(timestamp: string): string {
+  const date = new Date(timestamp)
+  const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  const today = new Date()
+  const isToday =
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate()
+  if (isToday) return time
+  const datePart = date.toLocaleDateString([], { month: 'short', day: 'numeric' })
+  return `${time} · ${datePart}`
+}
+
 export function ConfirmLogEventArtifact({ artifact }: ConfirmLogEventArtifactProps) {
   const [status, setStatus] = useState<Status>('pending')
   const [errorMessage, setErrorMessage] = useState('')
   const router = useRouter()
   const formattedTimestamp =
-    artifact.timestamp !== undefined ? new Date(artifact.timestamp).toLocaleString() : undefined
+    artifact.timestamp !== undefined ? formatEventTimestamp(artifact.timestamp) : undefined
 
   async function handleConfirm() {
     setStatus('loading')
@@ -43,6 +56,9 @@ export function ConfirmLogEventArtifact({ artifact }: ConfirmLogEventArtifactPro
           ...(artifact.subtype && { subtype: artifact.subtype }),
           ...(artifact.food_description && { food_description: artifact.food_description }),
           ...(artifact.timestamp && { timestamp: artifact.timestamp }),
+          ...(artifact.duration_minutes !== undefined && {
+            duration_minutes: artifact.duration_minutes,
+          }),
           ...(artifact.notes && { notes: artifact.notes }),
         }),
       })
@@ -151,6 +167,14 @@ export function ConfirmLogEventArtifact({ artifact }: ConfirmLogEventArtifactPro
               <div className="flex justify-between">
                 <dt className="text-xs text-[#6b6b6b]">Food</dt>
                 <dd className="text-xs text-[#a3a3a3]">{artifact.food_description}</dd>
+              </div>
+            )}
+            {artifact.duration_minutes !== undefined && (
+              <div className="flex justify-between">
+                <dt className="text-xs text-[#6b6b6b]">Duration</dt>
+                <dd className="text-xs text-[#a3a3a3] tabular-nums">
+                  {String(artifact.duration_minutes)} min
+                </dd>
               </div>
             )}
             {formattedTimestamp !== undefined && (

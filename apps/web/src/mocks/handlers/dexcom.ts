@@ -168,3 +168,30 @@ export function mcpHandlerWithFixture(toolName: string, fixture: unknown) {
     return mcpToolResponse(body.id, result)
   })
 }
+
+export interface CapturedMcpToolCall {
+  name: string
+  args: Record<string, unknown>
+}
+
+/**
+ * Returns an MSW handler that records each tools/call request and returns a success payload.
+ * Pass `onCapture` to assert against tool name and arguments in tests.
+ */
+export function mcpHandlerCapturingToolCalls(
+  onCapture: (call: CapturedMcpToolCall) => void,
+  result: unknown = { eventId: 'test-event-id' },
+) {
+  return http.post(MCP_ENDPOINT, async ({ request }) => {
+    const body = (await request.json()) as JsonRpcRequest
+    if (body.method === 'initialize') return mcpInitResponse(body.id)
+    if (body.id === undefined) return new HttpResponse(null, { status: 202 })
+    if (body.method === 'tools/call') {
+      const name = (body.params?.name as string | undefined) ?? ''
+      const args = (body.params?.arguments as Record<string, unknown> | undefined) ?? {}
+      onCapture({ name, args })
+      return mcpToolResponse(body.id, result)
+    }
+    return HttpResponse.json({ jsonrpc: '2.0', id: body.id, result: {} })
+  })
+}

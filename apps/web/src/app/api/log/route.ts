@@ -9,6 +9,7 @@ const LogEventBodySchema = z.object({
   subtype: z.string().optional(),
   food_description: z.string().optional(),
   timestamp: z.string().optional(),
+  duration_minutes: z.number().optional(),
   notes: z.string().optional(),
 })
 
@@ -25,7 +26,8 @@ export async function POST(req: Request): Promise<Response> {
     return NextResponse.json({ success: false, error: 'Invalid request body' }, { status: 400 })
   }
 
-  const { eventType, value, unit, subtype, food_description, timestamp, notes } = parsed.data
+  const { eventType, value, unit, subtype, food_description, timestamp, duration_minutes, notes } =
+    parsed.data
 
   try {
     let result: unknown
@@ -47,7 +49,11 @@ export async function POST(req: Request): Promise<Response> {
     } else {
       result = await callDexcomTool('log_exercise', {
         activity_type: unit,
-        duration_minutes: value,
+        ...(duration_minutes !== undefined
+          ? { duration_minutes }
+          : value > 0
+            ? { duration_minutes: value }
+            : {}),
         ...(timestamp && { timestamp }),
         ...(notes && { notes }),
       })
