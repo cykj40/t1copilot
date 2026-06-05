@@ -469,7 +469,7 @@
     {
       id: 7,
       title: "Event Logger UI + Event Logger Agent",
-      status: "inprogress",
+      status: "done",
       subtasks: [
         {
           text: "confirm_log_event tool in /api/chat — pending_confirmation, never auto-logs",
@@ -513,19 +513,19 @@
         },
         {
           text: "EventLoggerForm: 'When?' time picker (Now / Earlier toggle + date+time inputs) on all 3 tabs",
-          done: false,
+          done: true,
         },
         {
           text: "EventLoggerForm: duration field on exercise tab",
-          done: false,
+          done: true,
         },
         {
           text: "timestamp threaded through confirm_log_event tool schema → ConfirmLogEventArtifact → /api/log → callDexcomTool",
-          done: false,
+          done: true,
         },
       ],
       notes:
-        "Core write flow complete May 25. Three subtasks remaining: timestamp/duration fields on the form, threading timestamp through the full confirm→log pipeline. These were scoped after P7 was marked done — treating as P7 tail work before starting P8.",
+        "Complete June 5. Timestamp + duration threading done end-to-end. 'When?' picker (Now/Earlier toggle + date+time inputs) on all 3 tabs. Duration field on exercise tab. timestamp + duration_minutes flow: EventLoggerForm natural-language message → agent extraction → confirm_log_event Zod schemaArtifact display → POST /api/log → callDexcomTool args. 63 tests passing. Biome + typecheck clean.",
     },
     {
       id: 8,
@@ -718,6 +718,10 @@
   ];
 
   const SESSIONS = [
+    {
+      date: "June 5, 2026",
+      text: "P7 tail complete. Timestamp and duration now flow end-to-end through the event logging path. EventLoggerForm: 'When?' picker (Now/Earlier) on all 3 tabs, Earlier reveals date+time inputs defaulting to today/now, composes ISO 8601 via new Date(). Exercise tab: optional Duration (min) field. Natural-language message injection includes time and duration when present. confirm_log_event Zod schema extended with timestamp? and duration_minutes?. ConfirmLogEventArtifact displays timestamp (time + date if not today) and duration when present. /api/log extended to accept and forward both fields to callDexcomTool. New MSW tests: insulin with past timestamp, exercise with duration, carbs without timestamp. 63/63 tests passing. Biome + typecheck clean.",
+    },
     {
       date: "June 4, 2026",
       text: "MCP server auth hardened: Dexcom tokens migrated to Turso (single source of truth), env bootstrap tokens removed from Fly. Peloton Auth0 OAuth refresh implemented after /auth/login Cloudflare lockdown; one-time browser token bootstrap, auto-refresh with rotation. Both servers verified in production. Real MCP health check route added (/api/health), hardcoded status badges replaced with live polling (useServerHealth hook, 30s poll). Biome lint added to dexcom-mcp-server and peloton-mcp-server. Model pin updated: claude-sonnet-4-5-20250929 → claude-sonnet-4-6 (June 15 retirement). 60 tests green.",
