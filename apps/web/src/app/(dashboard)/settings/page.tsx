@@ -1,8 +1,8 @@
 import { getBaselineParameters } from '@t1copilot/mcp-clients'
-import { getMcpServerHealth } from '@/app/api/health/route'
 import { BaselineParametersForm } from '@/components/settings/BaselineParametersForm'
 import { MemoryViewer } from '@/components/settings/MemoryViewer'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { getMcpServerHealth } from '@/lib/mcp-health'
 import type { McpServerStatus } from '@/types/agents'
 
 async function BaselineParametersSection() {

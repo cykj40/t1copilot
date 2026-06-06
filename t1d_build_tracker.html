@@ -530,47 +530,29 @@
     {
       id: 8,
       title: "Modeling Agent + prediction UI",
-      status: "todo",
+      status: "done",
       subtasks: [
-        {
-          text: "Build on AI SDK route (/api/chat) — NOT packages/agents (frozen)",
-          done: false,
-        },
-        {
-          text: "render_prediction artifact type — prediction card with confidence interval + timeline",
-          done: false,
-        },
-        {
-          text: "predict_glucose_impact tool wired: action_type (insulin|carbs|both), insulin_units?, carb_grams?, current_glucose?",
-          done: false,
-        },
-        {
-          text: "get_baseline_parameters tool wired — surfaces ISF/ICR/basal read-only in artifact",
-          done: false,
-        },
-        {
-          text: "compare_expected_vs_actual tool wired — event_type, event_timestamp, event_value, current_glucose, window_hours?",
-          done: false,
-        },
-        {
-          text: "get_glucose_statistics tool wired — hours param, powers stats cards more accurately than get_glucose_range",
-          done: false,
-        },
-        {
-          text: "/settings page: baseline parameters card reads from live get_baseline_parameters (replace placeholder)",
-          done: false,
-        },
-        {
-          text: "System prompt updated: agent calls predict_glucose_impact when user asks about dosing impact",
-          done: false,
-        },
-        {
-          text: "MSW mocks for new Dexcom modeling tools + tests",
-          done: false,
-        },
+        { text: "Build on AI SDK route (/api/chat) — NOT packages/agents (frozen)", done: true },
+        { text: "render_prediction artifact type — prediction card with confidence interval + timeline", done: true },
+        { text: "predict_glucose_impact tool wired: action_type (insulin|carbs|both), insulin_units?, carb_grams?, current_glucose?", done: true },
+        { text: "get_baseline_parameters tool wired — surfaces ISF/ICR/basal read-only in artifact", done: true },
+        { text: "compare_expected_vs_actual tool wired — event_type, event_timestamp, event_value, current_glucose, window_hours?", done: true },
+        { text: "get_glucose_statistics tool wired — hourers stats cards more accurately than get_glucose_range", done: true },
+        { text: "System prompt updated: agent calls predict_glucose_impact when user asks about dosing impact", done: true },
+        { text: "MSW mocks for new Dexcom modeling tools + tests", done: true },
+        { text: "isDefaultParameters() utility — detects when server defaults (ISF=30, ICR=4, basal=30) are still in place", done: true },
+        { text: "update_baseline_parameters Zod schema + MCP wrapper with confirmed:true guard in wrapper", done: true },
+        { text: "/api/baseline POST route — Zod-validated, confirmed:true injected server-side, 400/502 error handling", done: true },
+        { text: "BaselineSetupModal — artifact panel card, fires when render_prediction called with default params, no skip/dismiss", done: true },
+        { text: "render_prediction gate — calls getBaselineParameters() first, returns requiresSetup:true if defaults detected, blocks predictGlucoseImpact call", done: true },
+        { text: "render_baseline_setup artifactred into ArtifactData union, toolResultToArtifact (AgentChat.tsx), ArtifactRouter", done: true },
+        { text: "System prompt PARAMETER SAFETY RULE — hard refusal if defaults detected, explicit message when user says they don't know their values", done: true },
+        { text: "BaselineParametersForm in /settings — editable, pre-populated, POSTs to /api/baseline, permanent safety warning", done: true },
+        { text: "MSW mocks + tests for update_baseline_parameters, /api/baseline route, isDefaultParameters()", done: true },
+        { text: "getMcpServerHealth extracted to apps/web/src/lib/mcp-health.ts — fixes Next.js route export constraint", done: true },
       ],
       notes:
-        "Builds on AI SDK route only. Key MCP tools: predict_glucose_impact, get_baseline_parameters, compare_expected_vs_actual, get_glucose_statistics (all UNWIRED — see §4.1 of instructions). Safety rule: predictions always show confidence ranges and carry medical disclaimer. Agent never recommends a specific dose — it predicts impact only.",
+        "Complete June 6. 79/79 tests passing. Biome + typecheck clean. v1: 4 modeling tools wired (predict_glucose_impact, get_baseline_parameters, compare_expected_vs_actual, get_glucose_statistics), PredictionArtifact + BaselineParametersArtifact, system prompt modeling rules. v2: safety gate — isDefaultParameters() blocks render_prediction when defaults detected, BaselineSetupModal fires in artifact panel (no skip/dismiss), BaselineParametersForm in /settings with permanent safety warning, /api/baseline POST route, confirmed:true double-guarded at wrapper + route. Bonus fix: getMcpServerHealth extracted from api/health/route.ts to lib/mcp-health.ts (Next.js route export constraint).",
     },
     {
       id: 9,
@@ -718,6 +700,10 @@
   ];
 
   const SESSIONS = [
+    {
+      date: "June 6, 2026",
+      text: "P8 complete. 79/79 tests. Modeling Agent fully wired on AI SDK route: predict_glucose_impact (PredictionArtifact — per action_type display, confidence ranges, color-coded predicted glucose, disclaimer always present), get_baseline_parameters (BaselineParametersArtifact), compare_expected_vs_actual, get_glucose_statistics (inline). Zod schemas .strict() in packages/mcp-clients/src/schemas/dexcom-modeling.ts. Safety gate: isDefaultParameters() check inside render_prediction execute blocks call when ISF=30/ICR/basal=30 detected → returns requiresSetup:true → BaselineSetupModal renders in artifact panel (no skip, no dismiss, no close X). update_baseline_parameters wired with confirmed:true double-guard (wrapper-level + server-side in /api/baseline). BaselineParametersForm in /settings: editable, pre-populated, permanent safety warning. PARAMETER SAFETY RULE in system prompt: hard refusal + care team redirect if user says they don't know their values. Bonus: getMcpServerHealth extracted to lib/mcp-health.ts.",
+    },
     {
       date: "June 5, 2026",
       text: "P7 tail complete. Timestamp and duration now flow end-to-end through the event logging path. EventLoggerForm: 'When?' picker (Now/Earlier) on all 3 tabs, Earlier reveals date+time inputs defaulting to today/now, composes ISO 8601 via new Date(). Exercise tab: optional Duration (min) field. Natural-language message injection includes time and duration when present. confirm_log_event Zod schema extended with timestamp? and duration_minutes?. ConfirmLogEventArtifact displays timestamp (time + date if not today) and duration when present. /api/log extended to accept and forward both fields to callDexcomTool. New MSW tests: insulin with past timestamp, exercise with duration, carbs without timestamp. 63/63 tests passing. Biome + typecheck clean.",
