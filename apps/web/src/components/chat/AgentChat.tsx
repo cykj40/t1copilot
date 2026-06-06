@@ -11,6 +11,8 @@ import type {
   ArtifactData,
   GlucoseChartReading,
   GlucoseChartStatistics,
+  RenderBaselineParametersArtifact,
+  RenderPredictionArtifact,
   T1UIMessage,
 } from '@/types/artifacts'
 import { ChatInput } from './ChatInput'
@@ -126,6 +128,31 @@ function toolResultToArtifact(
         title: (out?.title as string | undefined) ?? (inp.title as string | undefined) ?? 'Report',
         html: (out?.html as string | undefined) ?? (inp.html as string | undefined) ?? '',
       }
+    case 'render_prediction': {
+      if (out?.requiresSetup === true) {
+        return { artifactType: 'render_baseline_setup' }
+      }
+      const predictionResult = out?.predictionResult
+      const actionType =
+        (out?.actionType as 'insulin' | 'carbs' | 'both' | undefined) ??
+        (inp.action_type as 'insulin' | 'carbs' | 'both' | undefined)
+      const disclaimer = out?.disclaimer as string | undefined
+      if (!predictionResult || !actionType || !disclaimer) return null
+      return {
+        artifactType: 'render_prediction',
+        predictionResult: predictionResult as RenderPredictionArtifact['predictionResult'],
+        actionType,
+        disclaimer,
+      }
+    }
+    case 'render_baseline_parameters': {
+      const parameters = out?.parameters
+      if (!parameters) return null
+      return {
+        artifactType: 'render_baseline_parameters',
+        parameters: parameters as RenderBaselineParametersArtifact['parameters'],
+      }
+    }
     default:
       return null
   }

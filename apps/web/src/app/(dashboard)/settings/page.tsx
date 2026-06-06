@@ -1,29 +1,23 @@
+import { getBaselineParameters } from '@t1copilot/mcp-clients'
 import { getMcpServerHealth } from '@/app/api/health/route'
+import { BaselineParametersForm } from '@/components/settings/BaselineParametersForm'
 import { MemoryViewer } from '@/components/settings/MemoryViewer'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { PLACEHOLDER_BASELINE } from '@/lib/placeholder'
 import type { McpServerStatus } from '@/types/agents'
 
-interface ParamRowProps {
-  label: string
-  value: string
-  unit: string
-  description: string
-}
-
-function ParamRow({ label, value, unit, description }: ParamRowProps) {
-  return (
-    <div className="flex items-center justify-between py-2 border-b border-border last:border-0">
-      <div>
-        <p className="text-xs font-medium text-foreground">{label}</p>
-        <p className="text-[10px] text-muted-foreground mt-0.5">{description}</p>
-      </div>
-      <div className="flex items-baseline gap-1 shrink-0 ml-4">
-        <span className="font-bold tabular-nums text-foreground text-sm">{value}</span>
-        <span className="text-[10px] text-muted-foreground">{unit}</span>
-      </div>
-    </div>
-  )
+async function BaselineParametersSection() {
+  try {
+    const parameters = await getBaselineParameters()
+    return <BaselineParametersForm initialParameters={parameters} />
+  } catch {
+    return (
+      <Card className="bg-card border-border">
+        <CardContent className="px-4 py-6">
+          <p className="text-xs text-muted-foreground text-center">Could not load parameters</p>
+        </CardContent>
+      </Card>
+    )
+  }
 }
 
 export default async function SettingsPage() {
@@ -51,40 +45,7 @@ export default async function SettingsPage() {
         </p>
       </div>
 
-      {/* Baseline parameters — read-only */}
-      <Card className="bg-card border-border">
-        <CardHeader className="pb-2 pt-3 px-4">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-foreground">Baseline Parameters</p>
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-              Read-only
-            </span>
-          </div>
-          <p className="text-[10px] text-muted-foreground">
-            Set by your care team. Changes require clinical approval.
-          </p>
-        </CardHeader>
-        <CardContent className="px-4 pb-3">
-          <ParamRow
-            label="Insulin Sensitivity Factor (ISF)"
-            value={String(PLACEHOLDER_BASELINE.isf)}
-            unit="mg/dL per unit"
-            description="How much 1 unit of insulin lowers glucose"
-          />
-          <ParamRow
-            label="Insulin-to-Carb Ratio (ICR)"
-            value={String(PLACEHOLDER_BASELINE.icr)}
-            unit="g per unit"
-            description="Grams of carbs covered by 1 unit"
-          />
-          <ParamRow
-            label="Basal Rate"
-            value={String(PLACEHOLDER_BASELINE.basalUnitsPerDay)}
-            unit="units/day"
-            description="Total daily basal insulin"
-          />
-        </CardContent>
-      </Card>
+      <BaselineParametersSection />
 
       {/* MCP server status */}
       <Card className="bg-card border-border">

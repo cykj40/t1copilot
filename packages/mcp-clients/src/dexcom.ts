@@ -1,5 +1,22 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
+import {
+  type BaselineParametersResponse,
+  BaselineParametersResponseSchema,
+  type CompareExpectedVsActualArgs,
+  type CompareExpectedVsActualResponse,
+  CompareExpectedVsActualResponseSchema,
+  type GlucoseStatisticsResponse,
+  GlucoseStatisticsResponseSchema,
+  type PredictGlucoseImpactArgs,
+  type PredictGlucoseImpactResponse,
+  PredictGlucoseImpactResponseSchema,
+  type UpdateBaselineParametersArgs,
+  type UpdateBaselineParametersResponse,
+  UpdateBaselineParametersResponseSchema,
+} from './schemas/dexcom-modeling.js'
+
+export * from './schemas/dexcom-modeling.js'
 
 const DEXCOM_MCP_URL = process.env.DEXCOM_MCP_SERVER_URL
   ? `${process.env.DEXCOM_MCP_SERVER_URL}/mcp`
@@ -11,6 +28,16 @@ export class DexcomMcpAuthError extends Error {
   constructor() {
     super('DEXCOM_MCP_AUTH_TOKEN is not set — refusing to connect unauthenticated')
     this.name = 'DexcomMcpAuthError'
+  }
+}
+
+export class DexcomMcpError extends Error {
+  readonly tool: string
+
+  constructor(tool: string, message: string) {
+    super(message)
+    this.name = 'DexcomMcpError'
+    this.tool = tool
   }
 }
 
@@ -96,5 +123,79 @@ export async function callDexcomTool(
     return JSON.parse(first.text) as unknown
   } finally {
     await client.close()
+  }
+}
+
+// ── Modeling tool wrappers ────────────────────────────────────────────────────
+
+export async function getBaselineParameters(): Promise<BaselineParametersResponse> {
+  const tool = 'get_baseline_parameters'
+  try {
+    const raw = await callDexcomTool(tool)
+    return BaselineParametersResponseSchema.parse(raw)
+  } catch (error) {
+    if (error instanceof DexcomMcpAuthError) throw error
+    const message = error instanceof Error ? error.message : String(error)
+    throw new DexcomMcpError(tool, message)
+  }
+}
+
+export async function predictGlucoseImpact(
+  args: PredictGlucoseImpactArgs,
+): Promise<PredictGlucoseImpactResponse> {
+  const tool = 'predict_glucose_impact'
+  try {
+    const raw = await callDexcomTool(tool, args as Record<string, unknown>)
+    return PredictGlucoseImpactResponseSchema.parse(raw)
+  } catch (error) {
+    if (error instanceof DexcomMcpAuthError) throw error
+    const message = error instanceof Error ? error.message : String(error)
+    throw new DexcomMcpError(tool, message)
+  }
+}
+
+export async function compareExpectedVsActual(
+  args: CompareExpectedVsActualArgs,
+): Promise<CompareExpectedVsActualResponse> {
+  const tool = 'compare_expected_vs_actual'
+  try {
+    const raw = await callDexcomTool(tool, args as Record<string, unknown>)
+    return CompareExpectedVsActualResponseSchema.parse(raw)
+  } catch (error) {
+    if (error instanceof DexcomMcpAuthError) throw error
+    const message = error instanceof Error ? error.message : String(error)
+    throw new DexcomMcpError(tool, message)
+  }
+}
+
+export async function getGlucoseStatistics(args?: {
+  hours?: number
+}): Promise<GlucoseStatisticsResponse> {
+  const tool = 'get_glucose_statistics'
+  try {
+    const raw = await callDexcomTool(tool, args ?? {})
+    return GlucoseStatisticsResponseSchema.parse(raw)
+  } catch (error) {
+    if (error instanceof DexcomMcpAuthError) throw error
+    const message = error instanceof Error ? error.message : String(error)
+    throw new DexcomMcpError(tool, message)
+  }
+}
+
+export async function updateBaselineParameters(
+  args: UpdateBaselineParametersArgs,
+): Promise<UpdateBaselineParametersResponse> {
+  const tool = 'update_baseline_parameters'
+  if (args.confirmed !== true) {
+    throw new DexcomMcpError(tool, 'confirmed must be true before updating baseline parameters')
+  }
+  try {
+    const raw = await callDexcomTool(tool, args as Record<string, unknown>)
+    return UpdateBaselineParametersResponseSchema.parse(raw)
+  } catch (error) {
+    if (error instanceof DexcomMcpAuthError) throw error
+    if (error instanceof DexcomMcpError) throw error
+    const message = error instanceof Error ? error.message : String(error)
+    throw new DexcomMcpError(tool, message)
   }
 }

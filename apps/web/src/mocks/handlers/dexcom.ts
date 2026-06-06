@@ -1,4 +1,5 @@
 import { HttpResponse, http } from 'msw'
+import { resolveModelingToolResult } from './dexcom-modeling.js'
 
 // The MCP SDK posts JSON-RPC messages to /mcp, not to /tools/{name}.
 // These handlers implement a minimal MCP Streamable HTTP server.
@@ -93,7 +94,7 @@ interface JsonRpcRequest {
   params?: Record<string, unknown>
 }
 
-function mcpInitResponse(id: number | undefined) {
+export function mcpInitResponse(id: number | undefined) {
   return new HttpResponse(JSON.stringify({ jsonrpc: '2.0', id, result: MCP_INIT_RESULT }), {
     headers: {
       'Content-Type': 'application/json',
@@ -127,7 +128,8 @@ export const dexcomHandlers = [
 
     if (body.method === 'tools/call') {
       const toolName = (body.params?.name as string | undefined) ?? ''
-      const result = TOOL_RESULTS[toolName] ?? {}
+      const args = (body.params?.arguments as Record<string, unknown> | undefined) ?? {}
+      const result = TOOL_RESULTS[toolName] ?? resolveModelingToolResult(toolName, args) ?? {}
       return mcpToolResponse(body.id, result)
     }
 
@@ -164,7 +166,11 @@ export function mcpHandlerWithFixture(toolName: string, fixture: unknown) {
     if (body.method === 'initialize') return mcpInitResponse(body.id)
     if (body.id === undefined) return new HttpResponse(null, { status: 202 })
     const name = (body.params?.name as string | undefined) ?? ''
-    const result = name === toolName ? fixture : (TOOL_RESULTS[name] ?? {})
+    const args = (body.params?.arguments as Record<string, unknown> | undefined) ?? {}
+    const result =
+      name === toolName
+        ? fixture
+        : (TOOL_RESULTS[name] ?? resolveModelingToolResult(name, args) ?? {})
     return mcpToolResponse(body.id, result)
   })
 }

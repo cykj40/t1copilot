@@ -1,9 +1,20 @@
 import { anthropic } from '@ai-sdk/anthropic'
-import { callPelotonTool, extractJson, PelotonMcpError } from '@t1copilot/mcp-clients'
+import {
+  type CompareExpectedVsActualArgs,
+  callPelotonTool,
+  compareExpectedVsActual,
+  extractJson,
+  getBaselineParameters,
+  getGlucoseStatistics,
+  PelotonMcpError,
+  type PredictGlucoseImpactArgs,
+  predictGlucoseImpact,
+} from '@t1copilot/mcp-clients'
 import type { WorkoutCorrelation } from '@t1copilot/types'
 import { convertToModelMessages, streamText, tool } from 'ai'
 import { z } from 'zod'
-import { getGlucoseRange } from '@/lib/dexcom-mcp'
+import { isDefaultParameters } from '@/lib/baseline-defaults'
+import { getGlucoseRange, getLatestGlucose } from '@/lib/dexcom-mcp'
 import type { T1UIMessage } from '@/types/artifacts'
 
 const SYSTEM_PROMPT = `You are T1Copilot, an AI assistant for Type 1 diabetes management.
@@ -26,7 +37,36 @@ Safety rules:
 - Never recommend specific insulin doses
 - Never suggest changing ISF, ICR, or basal rates
 - Always frame insights as patterns to discuss with a care team
-- End every response with: ⚠️ T1Copilot is assistive only. All health decisions require your judgment and your care team.`
+- End every response with: ⚠️ T1Copilot is assistive only. All health decisions require your judgment and your care team.
+
+MODELING AGENT RULES:
+- When the user asks "what happens if I take X units", "what will X grams do to my glucose",
+  "how will this affect my levels", or any dosing impact question → call render_prediction with
+  the appropriate action_type and values. Always fetch live glucose via get_latest_glucose first
+  if current_glucose is not provided by the user.
+- When the user asks to see their baseline parameters, ISF, ICR, or correction factor → call
+  render_baseline_parameters.
+- When the user asks for glucose statistics, averages, time-in-range, or a stats summary → call
+  render_glucose_stats with an appropriate hours value (default 24, use 168 for weekly).
+- When the user asks how accurate a past prediction was, or whether their insulin/carbs behaved
+  as expected → call compare_prediction_vs_actual with the event details. If the event timestamp
+  is not provided, ask the user for it before calling.
+- NEVER recommend a specific dose. NEVER say "you should take X units". Predictions show impact
+  only — the user decides.
+- ALWAYS include the disclaimer from the MCP response in any prediction-related reply.
+
+PARAMETER SAFETY RULE:
+- Before calling render_prediction, always call render_baseline_parameters first.
+- If ISF=30, ICR=4, and basal=30 are all still set (server defaults), DO NOT call
+  render_prediction under any circumstances. Tell the user: "I need your personal baseline
+  parameters before I can run predictions — ISF, insulin-to-carb ratio, and basal dose.
+  These should come from your care team or your own confirmed testing. Without them I can't
+  give you accurate numbers. Please set them in Settings before asking for predictions."
+- If the user says they don't know their values: respond with "I need a reasonable starting
+  point to run predictions — even an approximate ISF and ICR from your care team or past
+  experience. I cannot use the system defaults because they belong to someone else. Speak with
+  your endocrinologist or diabetes care team if you don't have confirmed values."
+- Never guess, estimate, or invent values for a prediction. No confirmed values = no prediction, full stop.`
 
 function getTemporalContext(): string {
   const now = new Date()
@@ -57,7 +97,7 @@ export async function POST(req: Request): Promise<Response> {
   const fullSystemPrompt = SYSTEM_PROMPT + getTemporalContext() + memorySection
 
   const result = streamText({
-    model: anthropic('claude-haiku-4-5-20251001'),
+    model: anthropic('claude-sonnet-4-6'),
     system: fullSystemPrompt,
     messages: await convertToModelMessages(messages),
     tools: {
@@ -185,6 +225,111 @@ export async function POST(req: Request): Promise<Response> {
           html: z.string().describe('Complete HTML document string'),
         }),
         execute: async ({ title, html }) => ({ title, html }),
+      }),
+      render_prediction: tool({
+        description:
+          'Predict glucose impact of insulin and/or carbs. Shows prediction artifact only — never recommend doses.',
+        inputSchema: z.object({
+          action_type: z.enum(['insulin', 'carbs', 'both']),
+          insulin_units: z.number().optional(),
+          carb_grams: z.number().optional(),
+          current_glucose: z.number().optional(),
+        }),
+        execute: async (args) => {
+          try {
+            const baseline = await getBaselineParameters()
+            if (isDefaultParameters(baseline)) {
+              return { requiresSetup: true }
+            }
+
+            let currentGlucose = args.current_glucose
+            if (currentGlucose === undefined) {
+              const latest = await getLatestGlucose()
+              currentGlucose = latest.value
+            }
+            const predictArgs: PredictGlucoseImpactArgs = {
+              action_type: args.action_type,
+              current_glucose: currentGlucose,
+            }
+            if (args.insulin_units !== undefined) predictArgs.insulin_units = args.insulin_units
+            if (args.carb_grams !== undefined) predictArgs.carb_grams = args.carb_grams
+            const predictionResult = await predictGlucoseImpact(predictArgs)
+            return {
+              predictionResult,
+              actionType: args.action_type,
+              disclaimer: predictionResult.disclaimer,
+            }
+          } catch (error) {
+            console.error('[render_prediction] MCP call failed:', error)
+            return {
+              error: error instanceof Error ? error.message : 'Prediction failed',
+            }
+          }
+        },
+      }),
+      render_baseline_parameters: tool({
+        description: 'Show baseline ISF, ICR, basal dose, and timing in the right panel',
+        inputSchema: z.object({}),
+        execute: async () => {
+          try {
+            const parameters = await getBaselineParameters()
+            return { parameters }
+          } catch (error) {
+            console.error('[render_baseline_parameters] MCP call failed:', error)
+            return {
+              error: error instanceof Error ? error.message : 'Failed to load baseline parameters',
+            }
+          }
+        },
+      }),
+      render_glucose_stats: tool({
+        description: 'Fetch glucose statistics for a time window — summarize in text',
+        inputSchema: z.object({
+          hours: z
+            .number()
+            .optional()
+            .describe('Hours to analyze — default 24, use 168 for weekly'),
+        }),
+        execute: async (args) => {
+          try {
+            const result = await getGlucoseStatistics(
+              args.hours !== undefined ? { hours: args.hours } : undefined,
+            )
+            return result
+          } catch (error) {
+            console.error('[render_glucose_stats] MCP call failed:', error)
+            return {
+              error: error instanceof Error ? error.message : 'Failed to load glucose statistics',
+            }
+          }
+        },
+      }),
+      compare_prediction_vs_actual: tool({
+        description: 'Compare expected vs actual glucose response for a past insulin or carb event',
+        inputSchema: z.object({
+          event_type: z.enum(['insulin', 'carbs']),
+          event_timestamp: z.string().describe('ISO 8601 event timestamp'),
+          event_value: z.number(),
+          current_glucose: z.number(),
+          window_hours: z.number().optional(),
+        }),
+        execute: async (args) => {
+          try {
+            const compareArgs: CompareExpectedVsActualArgs = {
+              event_type: args.event_type,
+              event_timestamp: args.event_timestamp,
+              event_value: args.event_value,
+              current_glucose: args.current_glucose,
+            }
+            if (args.window_hours !== undefined) compareArgs.window_hours = args.window_hours
+            return await compareExpectedVsActual(compareArgs)
+          } catch (error) {
+            console.error('[compare_prediction_vs_actual] MCP call failed:', error)
+            return {
+              error: error instanceof Error ? error.message : 'Comparison failed',
+            }
+          }
+        },
       }),
     },
   })

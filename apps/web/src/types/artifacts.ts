@@ -1,3 +1,7 @@
+import type {
+  BaselineParametersResponse,
+  PredictGlucoseImpactResponse,
+} from '@t1copilot/mcp-clients'
 import type { WorkoutCorrelation } from '@t1copilot/types'
 import type { UIMessage } from 'ai'
 
@@ -110,6 +114,22 @@ export interface RenderHtmlReportArtifact {
   html: string
 }
 
+export interface RenderPredictionArtifact {
+  artifactType: 'render_prediction'
+  predictionResult: PredictGlucoseImpactResponse
+  actionType: 'insulin' | 'carbs' | 'both'
+  disclaimer: string
+}
+
+export interface RenderBaselineParametersArtifact {
+  artifactType: 'render_baseline_parameters'
+  parameters: BaselineParametersResponse
+}
+
+export interface RenderBaselineSetupArtifact {
+  artifactType: 'render_baseline_setup'
+}
+
 export type ArtifactData =
   | GlucoseChartArtifact
   | InsightCardArtifact
@@ -123,6 +143,9 @@ export type ArtifactData =
   | ConfirmLogEventArtifact
   | RenderMarkdownDocArtifact
   | RenderHtmlReportArtifact
+  | RenderPredictionArtifact
+  | RenderBaselineParametersArtifact
+  | RenderBaselineSetupArtifact
 
 // ── T1 tool types for useChat generic ────────────────────────────────────────
 
@@ -187,6 +210,81 @@ export type T1Tools = {
   render_html_report: {
     input: { title: string; html: string }
     output: { title: string; html: string }
+  }
+  render_prediction: {
+    input: {
+      action_type: 'insulin' | 'carbs' | 'both'
+      insulin_units?: number
+      carb_grams?: number
+      current_glucose?: number
+    }
+    output: {
+      predictionResult?: PredictGlucoseImpactResponse
+      actionType?: 'insulin' | 'carbs' | 'both'
+      disclaimer?: string
+      requiresSetup?: boolean
+      error?: string
+    }
+  }
+  render_baseline_parameters: {
+    input: Record<string, never>
+    output: {
+      parameters: BaselineParametersResponse
+      error?: string
+    }
+  }
+  render_glucose_stats: {
+    input: { hours?: number }
+    output: {
+      timeRange: { start: string; end: string; hours: number }
+      statistics: {
+        average: number
+        standardDeviation: number
+        min: number
+        max: number
+        timeInRange: number
+        timeBelowRange: number
+        timeAboveRange: number
+        readingCount: number
+        coefficientOfVariation: number
+      }
+      error?: string
+    }
+  }
+  compare_prediction_vs_actual: {
+    input: {
+      event_type: 'insulin' | 'carbs'
+      event_timestamp: string
+      event_value: number
+      current_glucose: number
+      window_hours?: number
+    }
+    output: {
+      event: {
+        type: string
+        value: number
+        timestamp: string
+        startingGlucose: number
+      }
+      prediction: {
+        predictedGlucose: number
+        predictedChange: number
+        confidenceRange: { low: number; high: number }
+      }
+      actual: { readingsAnalyzed: number; finalGlucose: number }
+      observation: {
+        observationType: string
+        expectedValue: number
+        actualValue: number
+        deviationPct: number
+        context: { timeOfDay: string; hour: number; eventType: string }
+        hypothesis: string
+        timestamp: string
+        id: number
+      }
+      disclaimer: string
+      error?: string
+    }
   }
 }
 
