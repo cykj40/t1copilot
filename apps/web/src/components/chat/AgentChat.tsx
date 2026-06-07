@@ -31,6 +31,7 @@ export interface AgentChatHandle {
 
 interface AgentChatProps {
   onArtifact: (artifact: ArtifactData) => void
+  onClearArtifact: () => void
   conversationId: string | null
   onFirstMessage: (text: string) => string
   onMessagesChange: (id: string, count: number) => void
@@ -159,7 +160,7 @@ function toolResultToArtifact(
 }
 
 export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function AgentChat(
-  { onArtifact, conversationId, onFirstMessage, onMessagesChange },
+  { onArtifact, onClearArtifact, conversationId, onFirstMessage, onMessagesChange },
   ref,
 ) {
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -207,13 +208,15 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
       conversationIdRef.current = activeId
     }
     setHasSent(true)
+    onClearArtifact()
+    sentToolCallIds.current = new Set()
     chatSendMessage({
       role: 'user',
       parts: [{ type: 'text', text: trimmed }],
     })
   }
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: chatSendMessage and onFirstMessage are stable
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chatSendMessage, onFirstMessage, and onClearArtifact are stable
   useImperativeHandle(ref, () => ({ sendMessage: doSendMessage }), [isLoading])
 
   useEffect(() => {

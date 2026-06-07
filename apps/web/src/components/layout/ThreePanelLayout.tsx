@@ -135,6 +135,7 @@ export function ThreePanelLayout({ children }: ThreePanelLayoutProps) {
 
   const sharedChatProps = {
     onArtifact: setArtifact,
+    onClearArtifact: () => setArtifact(null),
     conversationId: activeConversationId,
     onFirstMessage: (text: string) => {
       const id = createConversation(text)
