@@ -73,6 +73,128 @@ export const MOCK_STALE_GLUCOSE = {
   ageMinutes: 22,
 }
 
+const MOCK_INSIGHT_STATS = {
+  average: 138,
+  standardDeviation: 20,
+  min: 72,
+  max: 210,
+  timeInRange: 74,
+  timeBelowRange: 4,
+  timeAboveRange: 22,
+  readingCount: 288,
+  coefficientOfVariation: 15,
+}
+
+export const MOCK_ANALYZE_TRENDS = {
+  period: {
+    start: '2026-05-31T00:00:00.000Z',
+    end: '2026-06-07T00:00:00.000Z',
+    days: 7,
+  },
+  overallStatistics: MOCK_INSIGHT_STATS,
+  overnightPattern: {
+    statistics: {
+      ...MOCK_INSIGHT_STATS,
+      average: 125,
+      timeInRange: 82,
+      readingCount: 84,
+    },
+    readingCount: 84,
+    note: 'Overnight average stable with mild dawn rise between 5–7 AM.',
+  },
+  postMealPatterns: {
+    mealsAnalyzed: 5,
+    averageSpike: 45,
+    recentMeals: [
+      {
+        timestamp: '2026-06-05T12:30:00.000Z',
+        preGlucose: 110,
+        maxGlucose: 168,
+        spike: 58,
+        carbData: {
+          id: 1,
+          grams: 45,
+          foodDescription: 'Lunch — rice bowl',
+          estimatedGi: 'medium',
+          timestamp: '2026-06-05T12:30:00.000Z',
+          createdAt: '2026-06-05T12:30:00.000Z',
+        },
+      },
+    ],
+    note: 'Post-meal spikes consistent with moderate GI meals.',
+  },
+  exerciseImpact: {
+    sessionsAnalyzed: 3,
+    recentSessions: [
+      {
+        timestamp: '2026-06-04T10:00:00.000Z',
+        preGlucose: 148,
+        minGlucose: 96,
+        drop: 52,
+        exerciseData: {
+          id: 1,
+          activityType: 'Cycling',
+          durationMinutes: 45,
+          intensity: 'moderate',
+          timestamp: '2026-06-04T10:00:00.000Z',
+          createdAt: '2026-06-04T10:00:00.000Z',
+        },
+      },
+    ],
+    note: 'Exercise sessions show predictable glucose drop within 90 minutes.',
+  },
+  disclaimer: 'Patterns are observational only. Discuss with your care team.',
+}
+
+export const MOCK_DETECT_PARAMETER_DRIFT = {
+  analysisWindow: '14 days',
+  observationCount: 8,
+  driftDetected: false,
+  findings: {
+    isfDrift: null,
+    icrDrift: null,
+    patterns: [],
+  },
+  recentObservations: [
+    {
+      type: 'isf_deviation',
+      deviation: '+12%',
+      hypothesis: 'Correction doses slightly less effective than expected',
+      timestamp: '2026-06-03T14:00:00.000Z',
+    },
+  ],
+  recommendation: 'No significant parameter drift detected. Continue current regimen.',
+  disclaimer: 'Drift analysis is observational. Confirm any changes with your care team.',
+}
+
+export const MOCK_GET_ADAPTIVE_INSIGHTS = {
+  analysisWindow: '14 days',
+  baselineParameters: {
+    isf: 30,
+    icr: 4,
+    basalDose: 30,
+    basalTiming: 'morning',
+    updatedAt: '2026-06-04T14:07:59Z',
+  },
+  observationsSummary:
+    'Predictions aligned with actuals within 15% on average over the analysis window.',
+  detectedDrift: {
+    isfDrift: null,
+    icrDrift: null,
+    patterns: [],
+  },
+  recentObservations: [
+    {
+      type: 'prediction_accuracy',
+      deviation: '−8%',
+      hypothesis: 'Carb predictions slightly overestimated rise',
+      timestamp: '2026-06-02T18:00:00.000Z',
+    },
+  ],
+  recommendation: 'Continue monitoring carb-heavy meals for prediction accuracy.',
+  disclaimer: 'Adaptive insights are model-based. Individual response varies.',
+}
+
 // ── MCP protocol helpers ──────────────────────────────────────────────────────
 
 const MCP_INIT_RESULT = {
@@ -85,6 +207,9 @@ const TOOL_RESULTS: Record<string, unknown> = {
   get_latest_glucose: MOCK_LATEST_GLUCOSE,
   get_glucose_range: MOCK_GLUCOSE_RANGE,
   get_daily_summary: MOCK_DAILY_SUMMARY,
+  analyze_trends: MOCK_ANALYZE_TRENDS,
+  detect_parameter_drift: MOCK_DETECT_PARAMETER_DRIFT,
+  get_adaptive_insights: MOCK_GET_ADAPTIVE_INSIGHTS,
 }
 
 interface JsonRpcRequest {

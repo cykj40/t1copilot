@@ -1,9 +1,13 @@
 import { anthropic } from '@ai-sdk/anthropic'
 import {
+  analyzeTrends,
   type CompareExpectedVsActualArgs,
   callPelotonTool,
   compareExpectedVsActual,
+  detectParameterDrift,
   extractJson,
+  extractText,
+  getAdaptiveInsights,
   getBaselineParameters,
   getGlucoseStatistics,
   PelotonMcpError,
@@ -22,7 +26,8 @@ const SYSTEM_PROMPT = `You are T1Copilot, an AI assistant for Type 1 diabetes ma
 CRITICAL TOOL USAGE RULES — always follow these:
 - If the user asks about glucose levels, trends, CGM data, blood sugar, time in range, or patterns → ALWAYS call render_glucose_chart. Never answer in text only.
 - If the user asks about workouts, exercise, Peloton rides, or activity impact on glucose → ALWAYS call render_workout_correlation.
-- If the user asks for a weekly summary, recap, or overview → ALWAYS call render_weekly_summary.
+- If the user asks for a weekly summary, insights, patterns, parameter drift, or how their management is going overall → ALWAYS call render_insight_summary. Pass days=7 for weekly, days=30 for monthly. Never answer insight questions in text only.
+- render_weekly_summary: DEPRECATED — use render_insight_summary instead for all summary requests.
 - If the user wants to prepare for a doctor or endo appointment → ALWAYS call render_doctor_checklist.
 - If the user wants to log insulin, carbs, or exercise → call confirm_log_event EXACTLY ONCE per user message. NEVER call it more than once in a single turn, even if the message mentions multiple events. NEVER auto-log anything. For insulin: always populate subtype with the insulin type ('rapid', 'long_acting', or 'correction'). For carbs: populate food_description if the user mentions the food.
 - If the user specifies a time (e.g. 'at 2:30 PM', '30 minutes ago', 'an hour ago', 'this morning'), extract it as a full ISO 8601 timestamp and pass it as timestamp on confirm_log_event. If no time is mentioned, omit timestamp — the MCP server defaults to now.
@@ -328,6 +333,61 @@ export async function POST(req: Request): Promise<Response> {
             return {
               error: error instanceof Error ? error.message : 'Comparison failed',
             }
+          }
+        },
+      }),
+      render_insight_summary: tool({
+        description:
+          'Synthesize a weekly insight summary — trends, drift, adaptive insights, exercise patterns',
+        inputSchema: z.object({
+          days: z.number().optional().describe('Days to analyze — default 7'),
+          weekLabel: z.string().optional().describe('Week label e.g. "Jun 1–7"'),
+        }),
+        execute: async ({ days, weekLabel }) => {
+          const label =
+            weekLabel ??
+            (() => {
+              const now = new Date()
+              const start = new Date(now.getTime() - (days ?? 7) * 24 * 60 * 60 * 1000)
+              return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}–${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+            })()
+
+          const [trendsResult, driftResult, adaptiveResult] = await Promise.allSettled([
+            analyzeTrends({ days: days ?? 7 }),
+            detectParameterDrift({ days: (days ?? 7) * 2 }),
+            getAdaptiveInsights({ days: (days ?? 7) * 2 }),
+          ])
+
+          let disciplineInsights: string | undefined
+          let hypoRisk: string | undefined
+          try {
+            const discRes = await callPelotonTool('peloton_get_discipline_insights', {
+              json_response: false,
+            })
+            disciplineInsights = extractText(discRes)
+          } catch (err) {
+            if (err instanceof PelotonMcpError) {
+              console.error('[render_insight_summary] discipline insights error:', err.message)
+            }
+          }
+          try {
+            const hypoRes = await callPelotonTool('peloton_detect_hypoglycemia_risk', {})
+            hypoRisk = extractText(hypoRes)
+          } catch (err) {
+            if (err instanceof PelotonMcpError) {
+              console.error('[render_insight_summary] hypo risk error:', err.message)
+            }
+          }
+
+          return {
+            weekLabel: label,
+            ...(trendsResult.status === 'fulfilled' ? { trends: trendsResult.value } : {}),
+            ...(driftResult.status === 'fulfilled' ? { drift: driftResult.value } : {}),
+            ...(adaptiveResult.status === 'fulfilled'
+              ? { adaptiveInsights: adaptiveResult.value }
+              : {}),
+            ...(disciplineInsights !== undefined ? { disciplineInsights } : {}),
+            ...(hypoRisk !== undefined ? { hypoRisk } : {}),
           }
         },
       }),

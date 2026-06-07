@@ -557,35 +557,35 @@
     {
       id: 9,
       title: "Insight Agent + synthesis feed",
-      status: "todo",
+      status: "inprogress",
       subtasks: [
         {
           text: "Build on AI SDK route (/api/chat) — NOT packages/agents (frozen)",
-          done: false,
+          done: true,
         },
         {
           text: "render_insight_summary artifact type — weekly pattern card with confidence scores",
-          done: false,
+          done: true,
         },
         {
           text: "analyze_trends tool wired — days param, surfaces post-meal spikes, overnight patterns",
-          done: false,
+          done: true,
         },
         {
           text: "detect_parameter_drift tool wired — flags when ISF/ICR appears to have shifted",
-          done: false,
+          done: true,
         },
         {
           text: "get_adaptive_insights tool wired — how predictions compare to actuals over time",
-          done: false,
+          done: true,
         },
         {
           text: "peloton_get_discipline_insights tool wired — per-discipline glucose drop averages",
-          done: false,
+          done: true,
         },
         {
           text: "peloton_detect_hypoglycemia_risk tool wired — delayed hypo risk scan",
-          done: false,
+          done: true,
         },
         {
           text: "get_insulin_events / get_carb_events / get_exercise_events wired for pattern context",
@@ -609,7 +609,7 @@
         },
         {
           text: "System prompt updated: agent proactively surfaces patterns when user asks for weekly/monthly summary",
-          done: false,
+          done: true,
         },
         {
           text: "Migrate memory-store.ts from localStorage to agent_insights Neon table + PGVector semantic retrieval — inject into system prompt via buimoryContext()",
@@ -700,6 +700,10 @@
   ];
 
   const SESSIONS = [
+    {
+      date: "June 7, 2026",
+      text: "P9 Half 1 complete. Insight Agent tools wired on AI SDK route: analyze_trends, detect_parameter_drift, get_adaptive_insights (Dexcom), peloton_get_discipline_insights, peloton_detect_hypoglycemia_risk (Peloton). New render_insight_summary artifact type — synthesizes all 5 tools in Promise.allSettled, graceful degradation if any tool fails. InsightSummaryArtifact renders 5 sections: overall stats, parameter drift (amber/green based on driftDetected boolean), adaptive observations, exercise patterns, post-meal patterns. System prompt updated: render_insight_summary replaces render_weekly_summary for all summary queries. Zod schemas .strict() in packages/mcp-clients/src/schemas/dexcom-insights.ts matching live response shapes. P9.5 (memory migration to Neon) remains.",
+    },
     {
       date: "June 6, 2026",
       text: "P8 complete. 79/79 tests. Modeling Agent fully wired on AI SDK route: predict_glucose_impact (PredictionArtifact — per action_type display, confidence ranges, color-coded predicted glucose, disclaimer always present), get_baseline_parameters (BaselineParametersArtifact), compare_expected_vs_actual, get_glucose_statistics (inline). Zod schemas .strict() in packages/mcp-clients/src/schemas/dexcom-modeling.ts. Safety gate: isDefaultParameters() check inside render_prediction execute blocks call when ISF=30/ICR/basal=30 detected → returns requiresSetup:true → BaselineSetupModal renders in artifact panel (no skip, no dismiss, no close X). update_baseline_parameters wired with confirmed:true double-guard (wrapper-level + server-side in /api/baseline). BaselineParametersForm in /settings: editable, pre-populated, permanent safety warning. PARAMETER SAFETY RULE in system prompt: hard refusal + care team redirect if user says they don't know their values. Bonus: getMcpServerHealth extracted to lib/mcp-health.ts.",

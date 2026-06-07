@@ -5,6 +5,7 @@ import { ConfirmLogEventArtifact } from './ConfirmLogEventArtifact'
 import { DoctorChecklistArtifact } from './DoctorChecklistArtifact'
 import { GlucoseChartArtifact } from './GlucoseChartArtifact'
 import { HtmlReportArtifact } from './HtmlReportArtifact'
+import { InsightSummaryArtifact } from './InsightSummaryArtifact'
 import { MarkdownDocArtifact } from './MarkdownDocArtifact'
 import { PredictionArtifact } from './PredictionArtifact'
 import { WeeklySummaryArtifact } from './WeeklySummaryArtifact'
@@ -36,6 +37,8 @@ export function ArtifactRouter({ artifact }: ArtifactRouterProps) {
       return <BaselineParametersArtifact artifact={artifact} />
     case 'render_baseline_setup':
       return <BaselineSetupModal />
+    case 'render_insight_summary':
+      return <InsightSummaryArtifact artifact={artifact} />
     default:
       return null
   }

@@ -12,6 +12,7 @@ import type {
   GlucoseChartReading,
   GlucoseChartStatistics,
   RenderBaselineParametersArtifact,
+  RenderInsightSummaryArtifact,
   RenderPredictionArtifact,
   T1UIMessage,
 } from '@/types/artifacts'
@@ -153,6 +154,34 @@ function toolResultToArtifact(
         artifactType: 'render_baseline_parameters',
         parameters: parameters as RenderBaselineParametersArtifact['parameters'],
       }
+    }
+    case 'render_insight_summary': {
+      const weekLabel =
+        (out?.weekLabel as string | undefined) ??
+        (inp.weekLabel as string | undefined) ??
+        'This Week'
+      const insightArtifact: RenderInsightSummaryArtifact = {
+        artifactType: 'render_insight_summary',
+        weekLabel,
+      }
+      if (out?.trends !== undefined) {
+        insightArtifact.trends = out.trends as NonNullable<RenderInsightSummaryArtifact['trends']>
+      }
+      if (out?.drift !== undefined) {
+        insightArtifact.drift = out.drift as NonNullable<RenderInsightSummaryArtifact['drift']>
+      }
+      if (out?.adaptiveInsights !== undefined) {
+        insightArtifact.adaptiveInsights = out.adaptiveInsights as NonNullable<
+          RenderInsightSummaryArtifact['adaptiveInsights']
+        >
+      }
+      if (typeof out?.disciplineInsights === 'string') {
+        insightArtifact.disciplineInsights = out.disciplineInsights
+      }
+      if (typeof out?.hypoRisk === 'string') {
+        insightArtifact.hypoRisk = out.hypoRisk
+      }
+      return insightArtifact
     }
     default:
       return null

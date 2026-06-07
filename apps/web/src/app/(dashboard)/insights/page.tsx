@@ -11,23 +11,17 @@ export default function InsightsPage() {
         </p>
       </div>
 
-      {/* Summary callout */}
-      <Card className="border-primary/25 bg-primary/5">
+      <Card className="border-border bg-card">
         <CardContent className="pt-3 pb-3 px-4">
-          <p className="text-xs font-medium text-primary mb-0.5">This week</p>
           <p className="text-xs text-muted-foreground">
-            Time in range improved <span className="font-medium text-[#22c55e]">+8%</span> vs last
-            week. Two patterns detected — ask the agent for details.
+            Ask the agent:{' '}
+            <span className="italic text-foreground">"Give me a weekly insight summary"</span> or{' '}
+            <span className="italic text-foreground">"How is my parameter drift looking?"</span>
           </p>
         </CardContent>
       </Card>
 
       <InsightFeed />
-
-      {/* Placeholder for agent synthesis cards */}
-      <p className="text-[10px] text-muted-foreground/50 text-center py-2">
-        Ask the agent for a detailed analysis or weekly summary.
-      </p>
     </div>
   )
 }

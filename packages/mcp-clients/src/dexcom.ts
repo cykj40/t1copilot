@@ -1,6 +1,14 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import {
+  type AnalyzeTrendsResponse,
+  AnalyzeTrendsResponseSchema,
+  type DetectParameterDriftResponse,
+  DetectParameterDriftResponseSchema,
+  type GetAdaptiveInsightsResponse,
+  GetAdaptiveInsightsResponseSchema,
+} from './schemas/dexcom-insights.js'
+import {
   type BaselineParametersResponse,
   BaselineParametersResponseSchema,
   type CompareExpectedVsActualArgs,
@@ -16,6 +24,7 @@ import {
   UpdateBaselineParametersResponseSchema,
 } from './schemas/dexcom-modeling.js'
 
+export * from './schemas/dexcom-insights.js'
 export * from './schemas/dexcom-modeling.js'
 
 const DEXCOM_MCP_URL = process.env.DEXCOM_MCP_SERVER_URL
@@ -195,6 +204,48 @@ export async function updateBaselineParameters(
   } catch (error) {
     if (error instanceof DexcomMcpAuthError) throw error
     if (error instanceof DexcomMcpError) throw error
+    const message = error instanceof Error ? error.message : String(error)
+    throw new DexcomMcpError(tool, message)
+  }
+}
+
+// ── Insight tool wrappers ─────────────────────────────────────────────────────
+
+export async function analyzeTrends(args?: { days?: number }): Promise<AnalyzeTrendsResponse> {
+  const tool = 'analyze_trends'
+  try {
+    const raw = await callDexcomTool(tool, args ?? {})
+    return AnalyzeTrendsResponseSchema.parse(raw)
+  } catch (error) {
+    if (error instanceof DexcomMcpAuthError) throw error
+    const message = error instanceof Error ? error.message : String(error)
+    throw new DexcomMcpError(tool, message)
+  }
+}
+
+export async function detectParameterDrift(args?: {
+  days?: number
+}): Promise<DetectParameterDriftResponse> {
+  const tool = 'detect_parameter_drift'
+  try {
+    const raw = await callDexcomTool(tool, args ?? {})
+    return DetectParameterDriftResponseSchema.parse(raw)
+  } catch (error) {
+    if (error instanceof DexcomMcpAuthError) throw error
+    const message = error instanceof Error ? error.message : String(error)
+    throw new DexcomMcpError(tool, message)
+  }
+}
+
+export async function getAdaptiveInsights(args?: {
+  days?: number
+}): Promise<GetAdaptiveInsightsResponse> {
+  const tool = 'get_adaptive_insights'
+  try {
+    const raw = await callDexcomTool(tool, args ?? {})
+    return GetAdaptiveInsightsResponseSchema.parse(raw)
+  } catch (error) {
+    if (error instanceof DexcomMcpAuthError) throw error
     const message = error instanceof Error ? error.message : String(error)
     throw new DexcomMcpError(tool, message)
   }

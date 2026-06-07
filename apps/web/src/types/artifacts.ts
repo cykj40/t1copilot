@@ -1,5 +1,8 @@
 import type {
+  AnalyzeTrendsResponse,
   BaselineParametersResponse,
+  DetectParameterDriftResponse,
+  GetAdaptiveInsightsResponse,
   PredictGlucoseImpactResponse,
 } from '@t1copilot/mcp-clients'
 import type { WorkoutCorrelation } from '@t1copilot/types'
@@ -130,6 +133,16 @@ export interface RenderBaselineSetupArtifact {
   artifactType: 'render_baseline_setup'
 }
 
+export interface RenderInsightSummaryArtifact {
+  artifactType: 'render_insight_summary'
+  trends?: AnalyzeTrendsResponse
+  drift?: DetectParameterDriftResponse
+  adaptiveInsights?: GetAdaptiveInsightsResponse
+  disciplineInsights?: string
+  hypoRisk?: string
+  weekLabel: string
+}
+
 export type ArtifactData =
   | GlucoseChartArtifact
   | InsightCardArtifact
@@ -146,6 +159,7 @@ export type ArtifactData =
   | RenderPredictionArtifact
   | RenderBaselineParametersArtifact
   | RenderBaselineSetupArtifact
+  | RenderInsightSummaryArtifact
 
 // ── T1 tool types for useChat generic ────────────────────────────────────────
 
@@ -283,6 +297,21 @@ export type T1Tools = {
         id: number
       }
       disclaimer: string
+      error?: string
+    }
+  }
+  render_insight_summary: {
+    input: {
+      days?: number
+      weekLabel?: string
+    }
+    output: {
+      trends?: AnalyzeTrendsResponse
+      drift?: DetectParameterDriftResponse
+      adaptiveInsights?: GetAdaptiveInsightsResponse
+      disciplineInsights?: string
+      hypoRisk?: string
+      weekLabel: string
       error?: string
     }
   }
