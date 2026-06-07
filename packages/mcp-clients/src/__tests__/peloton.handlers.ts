@@ -120,7 +120,7 @@ const SERVER_TOOL_ARG_SCHEMAS: Record<string, z.ZodTypeAny> = {
       window_minutes_after: z.number().optional(),
     })
     .strict(),
-  peloton_sync_workouts: z.object({ force: z.boolean().optional() }).strict(),
+  peloton_sync_workouts: z.object({ limit: z.number().int().min(1).max(200).optional() }).strict(),
 }
 
 function validateToolArguments(id: number | undefined, toolName: string, args: unknown) {

@@ -31,6 +31,9 @@ export const MOCK_PELOTON_DISCIPLINE_INSIGHTS = [
   { discipline: 'Running', workoutCount: 8, avgGlucoseDrop: 18, avgHypoRisk: 'low' },
 ]
 
+export const MOCK_PELOTON_SYNC_TEXT =
+  'Synced 10 workouts from Peloton API.\n\nDatabase now contains 10 total workouts.\n\nYou can now analyze glucose correlations using peloton_analyze_glucose_correlation.'
+
 export const MOCK_PELOTON_CORRELATION = {
   workoutId: 'w1',
   discipline: 'Cycling',
@@ -99,6 +102,15 @@ export const pelotonHandlers = [
 
     if (body.method === 'tools/call') {
       const toolName = (body.params?.name as string | undefined) ?? ''
+      if (toolName === 'peloton_sync_workouts') {
+        return HttpResponse.json({
+          jsonrpc: '2.0',
+          id: body.id,
+          result: {
+            content: [{ type: 'text', text: MOCK_PELOTON_SYNC_TEXT }],
+          },
+        })
+      }
       const result = TOOL_RESULTS[toolName] ?? {}
       return mcpToolResponse(body.id, result)
     }

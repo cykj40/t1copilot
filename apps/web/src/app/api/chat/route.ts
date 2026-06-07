@@ -21,11 +21,16 @@ import { isDefaultParameters } from '@/lib/baseline-defaults'
 import { getGlucoseRange, getLatestGlucose } from '@/lib/dexcom-mcp'
 import type { T1UIMessage } from '@/types/artifacts'
 
+const SyncWorkoutsInputSchema = z.object({
+  limit: z.number().int().min(1).max(200).optional().default(50),
+})
+
 const SYSTEM_PROMPT = `You are T1Copilot, an AI assistant for Type 1 diabetes management.
 
 CRITICAL TOOL USAGE RULES — always follow these:
 - If the user asks about glucose levels, trends, CGM data, blood sugar, time in range, or patterns → ALWAYS call render_glucose_chart. Never answer in text only.
 - If the user asks about workouts, exercise, Peloton rides, or activity impact on glucose → ALWAYS call render_workout_correlation.
+- sync_peloton_workouts: refreshes workout data from Peloton. Call this when the user says "sync my workouts", "refresh workouts", or asks why recent rides are missing.
 - If the user asks for a weekly summary, insights, patterns, parameter drift, or how their management is going overall → ALWAYS call render_insight_summary. Pass days=7 for weekly, days=30 for monthly. Never answer insight questions in text only.
 - render_weekly_summary: DEPRECATED — use render_insight_summary instead for all summary requests.
 - If the user wants to prepare for a doctor or endo appointment → ALWAYS call render_doctor_checklist.
@@ -332,6 +337,24 @@ export async function POST(req: Request): Promise<Response> {
             console.error('[compare_prediction_vs_actual] MCP call failed:', error)
             return {
               error: error instanceof Error ? error.message : 'Comparison failed',
+            }
+          }
+        },
+      }),
+      sync_peloton_workouts: tool({
+        description:
+          'Force-sync the latest workouts from the Peloton API into the local database. ' +
+          'Run this when the user wants to refresh their workout data before correlation analysis. ' +
+          'Returns how many workouts were synced and the total count now in the database.',
+        inputSchema: SyncWorkoutsInputSchema,
+        execute: async ({ limit }) => {
+          try {
+            const result = await callPelotonTool('peloton_sync_workouts', { limit })
+            return { success: true, message: extractText(result) }
+          } catch (err) {
+            return {
+              success: false,
+              message: `Sync failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
             }
           }
         },

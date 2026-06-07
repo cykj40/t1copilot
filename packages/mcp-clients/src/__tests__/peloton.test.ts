@@ -159,13 +159,13 @@ describe('peloton_sync_workouts', () => {
     expect(data.synced).toBe(3)
   })
 
-  it('default coercion — force defaults to false', async () => {
+  it('default coercion — limit defaults to 50', async () => {
     const response = await callPelotonTool('peloton_sync_workouts', {})
     expect(extractJson(response)).toEqual(MOCK_SYNC_RESULT)
   })
 
-  it('accepts explicit force=true', async () => {
-    const response = await callPelotonTool('peloton_sync_workouts', { force: true })
+  it('accepts explicit limit', async () => {
+    const response = await callPelotonTool('peloton_sync_workouts', { limit: 25 })
     expect(extractJson(response)).toEqual(MOCK_SYNC_RESULT)
   })
 })

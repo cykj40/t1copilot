@@ -56,9 +56,11 @@ const PelotonAnalyzeGlucoseCorrelationSchema = z.object({
   window_minutes_after: z.number().default(120),
 })
 
-const PelotonSyncWorkoutsSchema = z.object({
-  force: z.boolean().default(false),
-})
+const PelotonSyncWorkoutsSchema = z
+  .object({
+    limit: z.number().int().min(1).max(200).optional().default(50),
+  })
+  .strict()
 
 const TOOL_SCHEMAS = {
   peloton_get_workouts: GetWorkoutsInputSchema,
