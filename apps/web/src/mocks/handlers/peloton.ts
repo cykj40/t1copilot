@@ -34,6 +34,19 @@ export const MOCK_PELOTON_DISCIPLINE_INSIGHTS = [
 export const MOCK_PELOTON_SYNC_TEXT =
   'Synced 10 workouts from Peloton API.\n\nDatabase now contains 10 total workouts.\n\nYou can now analyze glucose correlations using peloton_analyze_glucose_correlation.'
 
+// Raw json_response: true shape for peloton_get_workouts — matches PelotonServerWorkout
+// in apps/web/src/actions/peloton.ts (start_time is Unix seconds, not an ISO string).
+export const MOCK_PELOTON_RAW_WORKOUTS = [
+  {
+    id: 'w1',
+    title: '45 min Cycling',
+    fitness_discipline: 'cycling',
+    start_time: Math.floor(new Date('2026-05-23T10:00:00.000Z').getTime() / 1000),
+    duration_seconds: 2700,
+    output_watts: 180,
+  },
+]
+
 export const MOCK_PELOTON_CORRELATION = {
   workoutId: 'w1',
   discipline: 'Cycling',
@@ -83,6 +96,24 @@ function mcpToolResponse(id: number | undefined, data: unknown) {
     jsonrpc: '2.0',
     id,
     result: { content: [{ type: 'text', text: JSON.stringify(data) }] },
+  })
+}
+
+// ── Per-test override helpers ─────────────────────────────────────────────────
+
+/**
+ * Returns an MSW handler that makes a specific tool return the given fixture
+ * while other tools use the default fixtures — mirrors mcpHandlerWithFixture
+ * in mocks/handlers/dexcom.ts.
+ */
+export function mcpPelotonHandlerWithFixture(toolName: string, fixture: unknown) {
+  return http.post(PELOTON_MCP_ENDPOINT, async ({ request }) => {
+    const body = (await request.json()) as JsonRpcRequest
+    if (body.method === 'initialize') return mcpInitResponse(body.id)
+    if (body.id === undefined) return new HttpResponse(null, { status: 202 })
+    const name = (body.params?.name as string | undefined) ?? ''
+    const result = name === toolName ? fixture : (TOOL_RESULTS[name] ?? {})
+    return mcpToolResponse(body.id, result)
   })
 }
 

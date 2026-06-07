@@ -25,12 +25,17 @@ const SyncWorkoutsInputSchema = z.object({
   limit: z.number().int().min(1).max(200).optional().default(50),
 })
 
+const BulkCorrelateInputSchema = z.object({
+  limit: z.number().int().min(1).max(50).optional().default(20),
+})
+
 const SYSTEM_PROMPT = `You are T1Copilot, an AI assistant for Type 1 diabetes management.
 
 CRITICAL TOOL USAGE RULES — always follow these:
 - If the user asks about glucose levels, trends, CGM data, blood sugar, time in range, or patterns → ALWAYS call render_glucose_chart. Never answer in text only.
 - If the user asks about workouts, exercise, Peloton rides, or activity impact on glucose → ALWAYS call render_workout_correlation.
 - sync_peloton_workouts: refreshes workout data from Peloton. Call this when the user says "sync my workouts", "refresh workouts", or asks why recent rides are missing.
+- bulk_correlate_workouts: backfills glucose correlation records for recent workouts. Call this when the user says "correlate my workouts", "populate discipline insights", "why are my insights empty", or "backfill correlations". Accepts optional limit (default 20, max 50).
 - If the user asks for a weekly summary, insights, patterns, parameter drift, or how their management is going overall → ALWAYS call render_insight_summary. Pass days=7 for weekly, days=30 for monthly. Never answer insight questions in text only.
 - render_weekly_summary: DEPRECATED — use render_insight_summary instead for all summary requests.
 - If the user wants to prepare for a doctor or endo appointment → ALWAYS call render_doctor_checklist.
@@ -355,6 +360,70 @@ export async function POST(req: Request): Promise<Response> {
             return {
               success: false,
               message: `Sync failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
+            }
+          }
+        },
+      }),
+      bulk_correlate_workouts: tool({
+        description:
+          'Backfill glucose correlation records for recent Peloton workouts. ' +
+          'For each workout, fetches the matching Dexcom glucose window and calls ' +
+          'peloton_analyze_glucose_correlation to write the correlation record. ' +
+          'Call this when discipline insights or hypoglycemia risk scan show no data. ' +
+          'Returns a summary of how many workouts were processed, skipped (no CGM data), and failed.',
+        inputSchema: BulkCorrelateInputSchema,
+        execute: async ({ limit }) => {
+          try {
+            await callPelotonTool('peloton_sync_workouts', { limit })
+
+            const workoutsRaw = await callPelotonTool('peloton_get_workouts', {
+              limit,
+              json_response: true,
+            })
+            const workouts = extractJson<Array<{ id: string; start_time: number }>>(workoutsRaw)
+
+            let processed = 0
+            let skipped = 0
+            let failed = 0
+
+            // Sequential — avoid hammering both MCP servers and partial-write noise in the correlation DB.
+            for (const workout of workouts) {
+              try {
+                const workoutMs = workout.start_time * 1000
+                const windowStart = new Date(workoutMs - 4 * 60 * 60 * 1000).toISOString()
+                const windowEnd = new Date(workoutMs + 4 * 60 * 60 * 1000).toISOString()
+
+                const glucoseRange = await getGlucoseRange(windowStart, windowEnd)
+                if (glucoseRange.readings.length === 0) {
+                  skipped++
+                  continue
+                }
+
+                await callPelotonTool('peloton_analyze_glucose_correlation', {
+                  workout_id: workout.id,
+                  glucose_readings: glucoseRange.readings.map((r) => ({
+                    timestamp: r.timestamp,
+                    value: r.value,
+                    trend: r.trend,
+                  })),
+                })
+                processed++
+              } catch {
+                failed++
+              }
+            }
+
+            return {
+              success: true,
+              message:
+                `Correlation backfill complete. ` +
+                `Processed: ${processed}, Skipped (no CGM data): ${skipped}, Failed: ${failed}. ` +
+                `Discipline insights and hypoglycemia risk scan now have data.`,
+            }
+          } catch (err) {
+            return {
+              success: false,
+              message: `Bulk correlation failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
             }
           }
         },
