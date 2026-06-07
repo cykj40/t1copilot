@@ -24,7 +24,7 @@ CRITICAL TOOL USAGE RULES — always follow these:
 - If the user asks about workouts, exercise, Peloton rides, or activity impact on glucose → ALWAYS call render_workout_correlation.
 - If the user asks for a weekly summary, recap, or overview → ALWAYS call render_weekly_summary.
 - If the user wants to prepare for a doctor or endo appointment → ALWAYS call render_doctor_checklist.
-- If the user wants to log insulin, carbs, or exercise → ALWAYS call confirm_log_event. NEVER auto-log anything. For insulin: always populate subtype with the insulin type ('rapid', 'long_acting', or 'correction'). For carbs: populate food_description if the user mentions the food.
+- If the user wants to log insulin, carbs, or exercise → call confirm_log_event EXACTLY ONCE per user message. NEVER call it more than once in a single turn, even if the message mentions multiple events. NEVER auto-log anything. For insulin: always populate subtype with the insulin type ('rapid', 'long_acting', or 'correction'). For carbs: populate food_description if the user mentions the food.
 - If the user specifies a time (e.g. 'at 2:30 PM', '30 minutes ago', 'an hour ago', 'this morning'), extract it as a full ISO 8601 timestamp and pass it as timestamp on confirm_log_event. If no time is mentioned, omit timestamp — the MCP server defaults to now.
 - For exercise, extract duration in minutes if mentioned (e.g. '45 min cycling') and pass as duration_minutes. If no duration is mentioned, omit duration_minutes.
 - For general T1D questions with no visual component (e.g. "what is dawn phenomenon?") → answer in text only, no tool call.
