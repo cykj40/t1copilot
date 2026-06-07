@@ -702,6 +702,10 @@
   const SESSIONS = [
     {
       date: "June 7, 2026",
+      text: "bulk_correlate_workouts tool added to /api/chat/route.ts. Syncs workouts first (peloton_sync_workouts), then fetches them as JSON (json_response: true), then for each workout (sequentially) computes a ±4h glucose window, fetches via getGlucoseRange, skips if no readings, writes correlation via peloton_analyze_glucose_correlation. Returns { success, message } with processed/skipped/failed counts; per-workout errors caught individually so one failure doesn't abort the batch. Schema corrections vs spec: flat array with start_time (not timestamp), glucose_readings[].timestamp (not recordedAt), no response_format on correlation call — all verified against actual schemas/types in the codebase. Used getGlucoseRange typed helper instead of raw callDexcomTool + extractJson. MCP-client-level tests added: bulk_correlate sequence (get_workouts → glucose window → analyze_correlation) + failure case. MOCK_PELOTON_RAW_WORKOUTS fixture + mcpPelotonHandlerWithFixture helper added to match json_response: true shape. System prompt trigger phrases added. Biome + typecheck clean.",
+    },
+    {
+      date: "June 7, 2026",
       text: "P6 tail fix. sync_peloton_workouts wired as first-class AI SDK tool on /api/chat/route.ts. SyncWorkoutsInputSchema (limit, optional, default 50). Tool execute calls callPelotonTool('peloton_sync_workouts', { limit }), returns { success, message }, errors caught — no raw MCP exceptions leak. System prompt updated with sync trigger phrases. MSW handler added for peloton_sync_workouts. New test file apps/web/src/__tests__/api/peloton-tools.test.ts. Side fix: PelotonSyncWorkoutsSchema in packages/mcp-clients/src/peloton.ts updated from force → limit — same strict-key trap as P6 lookback_hours. 89/89 (web) + 33/33 (mcp-clients) passing. Biome + typecheck clean.",
     },
     {
