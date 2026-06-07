@@ -464,7 +464,7 @@
         },
       ],
       notes:
-        "Complete May 23. 5 Zod schemas, PelotonMcpError, extractText/extractJson hardened (isError guard + JSON.parse try/catch). Live workout correlation + hypo risk alert banner + discipline insights on /workout page. 32 tests. Zero TS errors.",
+        "Complete May 23. 5 Zod schemas, PelotonMcpError, extractText/extractJson hardened (isError guard + JSON.parse try/catch). Live workout correlation + hypo risk alert banner + discipline insights on /workout page. 32 tests. Zero TS errors. Tail fix June 7: sync_peloton_workouts wired as AI SDK tool — agent can now handle 'sync my workouts' directly from chat.",
     },
     {
       id: 7,
@@ -700,6 +700,10 @@
   ];
 
   const SESSIONS = [
+    {
+      date: "June 7, 2026",
+      text: "P6 tail fix. sync_peloton_workouts wired as first-class AI SDK tool on /api/chat/route.ts. SyncWorkoutsInputSchema (limit, optional, default 50). Tool execute calls callPelotonTool('peloton_sync_workouts', { limit }), returns { success, message }, errors caught — no raw MCP exceptions leak. System prompt updated with sync trigger phrases. MSW handler added for peloton_sync_workouts. New test file apps/web/src/__tests__/api/peloton-tools.test.ts. Side fix: PelotonSyncWorkoutsSchema in packages/mcp-clients/src/peloton.ts updated from force → limit — same strict-key trap as P6 lookback_hours. 89/89 (web) + 33/33 (mcp-clients) passing. Biome + typecheck clean.",
+    },
     {
       date: "June 7, 2026",
       text: "P9 Half 1 complete. Insight Agent tools wired on AI SDK route: analyze_trends, detect_parameter_drift, get_adaptive_insights (Dexcom), peloton_get_discipline_insights, peloton_detect_hypoglycemia_risk (Peloton). New render_insight_summary artifact type — synthesizes all 5 tools in Promise.allSettled, graceful degradation if any tool fails. InsightSummaryArtifact renders 5 sections: overall stats, parameter drift (amber/green based on driftDetected boolean), adaptive observations, exercise patterns, post-meal patterns. System prompt updated: render_insight_summary replaces render_weekly_summary for all summary queries. Zod schemas .strict() in packages/mcp-clients/src/schemas/dexcom-insights.ts matching live response shapes. P9.5 (memory migration to Neon) remains.",
