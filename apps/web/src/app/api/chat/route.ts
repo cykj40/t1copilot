@@ -352,11 +352,36 @@ export async function POST(req: Request): Promise<Response> {
               return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}–${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
             })()
 
-          const [trendsResult, driftResult, adaptiveResult] = await Promise.allSettled([
-            analyzeTrends({ days: days ?? 7 }),
-            detectParameterDrift({ days: (days ?? 7) * 2 }),
-            getAdaptiveInsights({ days: (days ?? 7) * 2 }),
-          ])
+          // Sequential — parallel MCP connections race and cross-wire responses on the Dexcom server.
+          let trendsResult: PromiseSettledResult<Awaited<ReturnType<typeof analyzeTrends>>>
+          try {
+            trendsResult = { status: 'fulfilled', value: await analyzeTrends({ days: days ?? 7 }) }
+          } catch (reason) {
+            console.error('[render_insight_summary] analyze_trends failed:', reason)
+            trendsResult = { status: 'rejected', reason }
+          }
+
+          let driftResult: PromiseSettledResult<Awaited<ReturnType<typeof detectParameterDrift>>>
+          try {
+            driftResult = {
+              status: 'fulfilled',
+              value: await detectParameterDrift({ days: (days ?? 7) * 2 }),
+            }
+          } catch (reason) {
+            console.error('[render_insight_summary] detect_parameter_drift failed:', reason)
+            driftResult = { status: 'rejected', reason }
+          }
+
+          let adaptiveResult: PromiseSettledResult<Awaited<ReturnType<typeof getAdaptiveInsights>>>
+          try {
+            adaptiveResult = {
+              status: 'fulfilled',
+              value: await getAdaptiveInsights({ days: (days ?? 7) * 2 }),
+            }
+          } catch (reason) {
+            console.error('[render_insight_summary] get_adaptive_insights failed:', reason)
+            adaptiveResult = { status: 'rejected', reason }
+          }
 
           let disciplineInsights: string | undefined
           let hypoRisk: string | undefined

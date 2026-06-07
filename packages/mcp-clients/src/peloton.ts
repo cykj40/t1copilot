@@ -35,9 +35,11 @@ export const GetDisciplineInsightsInputSchema = z
   })
   .strict()
 
-const PelotonDetectHypoglycemiaRiskSchema = z.object({
-  lookback_hours: z.number().int().min(1).max(72).default(48),
-})
+const PelotonDetectHypoglycemiaRiskSchema = z
+  .object({
+    response_format: z.string().optional(),
+  })
+  .strict()
 
 const PelotonAnalyzeGlucoseCorrelationSchema = z.object({
   workout_id: z.string().min(1),

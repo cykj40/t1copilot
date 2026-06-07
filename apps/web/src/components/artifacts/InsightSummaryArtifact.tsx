@@ -26,8 +26,17 @@ function DarkCard({
   )
 }
 
+function formatHypoRiskDisplay(hypoRisk: string | undefined): string | undefined {
+  if (hypoRisk === undefined) return undefined
+  if (hypoRisk.includes('unrecognized_keys') || hypoRisk.startsWith('Error')) {
+    return 'No hypoglycemia risk data available yet.'
+  }
+  return hypoRisk
+}
+
 export function InsightSummaryArtifact({ artifact }: InsightSummaryArtifactProps) {
   const { trends, drift, adaptiveInsights, disciplineInsights, hypoRisk, weekLabel } = artifact
+  const hypoRiskDisplay = formatHypoRiskDisplay(hypoRisk)
   const disclaimer = trends?.disclaimer ?? drift?.disclaimer ?? adaptiveInsights?.disclaimer ?? null
 
   return (
@@ -201,9 +210,9 @@ export function InsightSummaryArtifact({ artifact }: InsightSummaryArtifactProps
         </DarkCard>
       )}
 
-      {hypoRisk && (
+      {hypoRiskDisplay && (
         <DarkCard title="Hypoglycemia risk scan">
-          <p className="text-[10px] text-[#a3a3a3] whitespace-pre-wrap">{hypoRisk}</p>
+          <p className="text-[10px] text-[#a3a3a3] whitespace-pre-wrap">{hypoRiskDisplay}</p>
         </DarkCard>
       )}
 

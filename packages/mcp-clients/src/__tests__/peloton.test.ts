@@ -91,20 +91,14 @@ describe('peloton_detect_hypoglycemia_risk', () => {
     expect(data.riskLevel).toBe('moderate')
   })
 
-  it('default coercion — lookback_hours defaults to 48', async () => {
+  it('empty args — sends no extra keys to server', async () => {
     const response = await callPelotonTool('peloton_detect_hypoglycemia_risk', {})
     expect(extractJson(response)).toEqual(MOCK_HYPO_RISK)
   })
 
-  it('rejects lookback_hours > 72', async () => {
+  it('rejects unrecognized args like lookback_hours', async () => {
     await expect(
-      callPelotonTool('peloton_detect_hypoglycemia_risk', { lookback_hours: 73 }),
-    ).rejects.toThrow()
-  })
-
-  it('rejects lookback_hours < 1', async () => {
-    await expect(
-      callPelotonTool('peloton_detect_hypoglycemia_risk', { lookback_hours: 0 }),
+      callPelotonTool('peloton_detect_hypoglycemia_risk', { lookback_hours: 48 } as never),
     ).rejects.toThrow()
   })
 })

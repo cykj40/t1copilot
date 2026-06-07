@@ -103,9 +103,7 @@ const SERVER_TOOL_ARG_SCHEMAS: Record<string, z.ZodTypeAny> = {
     })
     .strict(),
   peloton_get_discipline_insights: z.object({ json_response: z.boolean().optional() }).strict(),
-  peloton_detect_hypoglycemia_risk: z
-    .object({ lookback_hours: z.number().int().min(1).max(72).optional() })
-    .strict(),
+  peloton_detect_hypoglycemia_risk: z.object({ response_format: z.string().optional() }).strict(),
   peloton_analyze_glucose_correlation: z
     .object({
       workout_id: z.string().min(1),
