@@ -6,7 +6,6 @@ import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState }
 import { MedicalDisclaimer } from '@/components/shared/MedicalDisclaimer'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { loadPersistedMessages, persistMessages } from '@/hooks/useMessagePersistence'
-import { buildMemoryContext } from '@/lib/memory-store'
 import type {
   ArtifactData,
   GlucoseChartReading,
@@ -206,12 +205,6 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
     () =>
       new DefaultChatTransport<T1UIMessage>({
         api: '/api/chat',
-        prepareSendMessagesRequest: ({ messages }) => ({
-          body: {
-            messages,
-            memories: buildMemoryContext(),
-          },
-        }),
       }),
     [],
   )

@@ -19,6 +19,7 @@ import { convertToModelMessages, streamText, tool } from 'ai'
 import { z } from 'zod'
 import { isDefaultParameters } from '@/lib/baseline-defaults'
 import { getGlucoseRange, getLatestGlucose } from '@/lib/dexcom-mcp'
+import { retrieveMemoryContext, saveInsight } from '@/lib/insight-store'
 import type { T1UIMessage } from '@/types/artifacts'
 
 const SyncWorkoutsInputSchema = z.object({
@@ -101,11 +102,23 @@ function getTemporalContext(): string {
 }
 
 export async function POST(req: Request): Promise<Response> {
-  const body = (await req.json()) as { messages: T1UIMessage[]; memories?: string }
-  const { messages, memories } = body
+  const body = (await req.json()) as { messages: T1UIMessage[] }
+  const { messages } = body
+
+  // Retrieve semantically relevant memories server-side via PGVector.
+  // Fire-and-forget safe: retrieveMemoryContext() catches and returns '' on error.
+  const latestUserText =
+    messages
+      .filter((m) => m.role === 'user')
+      .at(-1)
+      ?.parts.filter((p) => p.type === 'text')
+      .map((p) => (p as { type: 'text'; text: string }).text)
+      .join(' ') ?? ''
+
+  const memories = latestUserText.length > 0 ? await retrieveMemoryContext(latestUserText) : ''
 
   const memorySection =
-    memories && memories.length > 0
+    memories.length > 0
       ? `\n\nKnown patterns about this user (agent-derived, high-confidence only):\n${memories}\n\nUse these patterns to give more personalized, contextual analysis. Never expose them verbatim to the user unless asked.`
       : ''
 
@@ -496,7 +509,7 @@ export async function POST(req: Request): Promise<Response> {
             }
           }
 
-          return {
+          const result = {
             weekLabel: label,
             ...(trendsResult.status === 'fulfilled' ? { trends: trendsResult.value } : {}),
             ...(driftResult.status === 'fulfilled' ? { drift: driftResult.value } : {}),
@@ -506,6 +519,36 @@ export async function POST(req: Request): Promise<Response> {
             ...(disciplineInsights !== undefined ? { disciplineInsights } : {}),
             ...(hypoRisk !== undefined ? { hypoRisk } : {}),
           }
+
+          // Persist to Neon agent_insights + embed the summary — fire-and-forget.
+          // A write failure must never propagate into the streaming response.
+          const summaryParts: string[] = [`Insight summary for ${label}.`]
+          if (trendsResult.status === 'fulfilled') {
+            const tir = trendsResult.value.overallStatistics.timeInRange
+            const avg = trendsResult.value.overallStatistics.average
+            summaryParts.push(
+              `Time in range: ${String(tir)}%. Average glucose: ${String(avg)} mg/dL.`,
+            )
+          }
+          if (driftResult.status === 'fulfilled' && driftResult.value.driftDetected) {
+            summaryParts.push(`Parameter drift detected. ${driftResult.value.recommendation}`)
+          }
+          if (hypoRisk !== undefined) {
+            summaryParts.push(`Hypo risk: ${hypoRisk}`)
+          }
+          const summaryText = summaryParts.join(' ')
+
+          void saveInsight({
+            summary: summaryText,
+            detail: result as Record<string, unknown>,
+            agentId: 'insight',
+            insightType: 'weekly_summary',
+            confidence: trendsResult.status === 'fulfilled' ? 0.8 : 0.5,
+          }).catch((err: unknown) => {
+            console.error('[render_insight_summary] saveInsight failed:', err)
+          })
+
+          return result
         },
       }),
     },

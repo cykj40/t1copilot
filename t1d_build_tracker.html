@@ -597,11 +597,11 @@
         },
         {
           text: "Memory migrated from localStorage to Neon agent_insights table via Drizzle",
-          done: false,
+          done: true,
         },
         {
           text: "PGVector semantic retrieval for memory injection into system prompt",
-          done: false,
+          done: true,
         },
         {
           text: "/insights page InsightFeed wired to live agent output (replace mock data)",
@@ -613,11 +613,11 @@
         },
         {
           text: "Migrate memory-store.ts from localStorage to agent_insights Neon table + PGVector semantic retrieval — inject into system prompt via buildMemoryContext()",
-          done: false,
+          done: true,
         },
       ],
       notes:
-        "Half 1 complete June 7. Wired: analyze_trends, detect_parameter_drift, get_adaptive_insights (Dexcom) + peloton_get_discipline_insights, peloton_detect_hypoglycemia_risk (Peloton). render_insight_summary composes all five via sequential awaits — the Dexcom MCP server cannot handle concurrent calls on one StreamableHTTP session. Remaining (P9.5): get_insulin_events / get_carb_events / get_exercise_events for pattern context, memory migration localStorage → Neon agent_insights + PGVector, /insights InsightFeed wired to live output (currently mock).",
+        "Half 1 complete June 7. P9.5 memory migration complete June 12. Wired: analyze_trends, detect_parameter_drift, get_adaptive_insights (Dexcom) + peloton_get_discipline_insights, peloton_detect_hypoglycemia_risk (Peloton). render_insight_summary fires saveInsight() fire-and-forget — embeds summary via text-embedding-3-small, writes to agent_insights Neon table. retrieveMemoryContext() queries by PGVector cosine similarity (<=> operator, HNSW index, raw sql template) and injects into system prompt sside. /api/memory route (GET/POST/DELETE). MemoryViewer reads and deletes from Neon. localStorage import button retained. Remaining: get_insulin_events / get_carb_events / get_exercise_events for pattern context, /insights InsightFeed wired to live output (currently mock).",
     },
     {
       id: 10,
@@ -700,6 +700,10 @@
   ];
 
   const SESSIONS = [
+    {
+      date: "June 12, 2026",
+      text: "P9.5 memory migration complete (6 steps). Step 1: embedding column + HNSW cosine index added to agent_insights via Drizzle migration (0001_silent_iron_man.sql). vectorColumn exported from embeddings.ts and reused in insights.ts. Step 2: saveInsight() in apps/web/src/lib/insight-store.ts — embeds summary via OpenAI text-embedding-3-small (1536 dims), inserts to agent_insights via getNeonDb(). Guards on SYSTEM_USER_ID + DATABASE_URL for graceful local dev degradation. Step 3: saveInsight() wired fire-and-forget into render_insight_summary execute handler — composites TIR, avg gl drift alert, hypo risk into summary text. Step 4: retrieveMemoryContext() added to insight-store.ts — embeds latest user message, queries agent_insights via raw sql <=> ::vector cast (not cosineDistance() — drizzle customType bug #5358 returns 0 on all rows). Orders by distance ASC to use HNSW index. /api/chat now builds memories server-side; body.memories removed from AgentChat. Step 5: /api/memory route (POST/GET/DELETE), localStorage import button in MemoryViewer. Step 6: MemoryViewer reads from GET /api/memory, per-item and clear-all delete via DELETE /api/memory. fetchMemories wrapped in useCallback. 101/101 tests throughout.",
+    },
     {
       date: "June 7, 2026",
       text: "bulk_correlate_workouts tool added to /api/chat/route.ts. Syncs workouts first (peloton_sync_workouts), then fetches them as JSON (json_response: true), then for each workout (sequentially) computes a ±4h glucose window, fetches via getGlucoseRange, skips if no readings, writes correlation via peloton_analyze_glucose_correlation. Returns { success, message } with processed/skipped/failed counts; per-workout errors caught individually so one failure doesn't abort the batch. Schema corrections vs spec: flat array with start_time (not timestamp), glucose_readings[].timestamp (not recordedAt), no response_format on correlation call — all verified against actual schemas/types in the codebase. Used getGlucoseRange typed helper instead of raw callDexcomTool + extractJson. MCP-client-level tests added: bulk_correlate sequence (get_workouts → glucose window → analyze_correlation) + failure case. MOCK_PELOTON_RAW_WORKOUTS fixture + mcpPelotonHandlerWithFixture helper added to match json_response: true shape. System prompt trigger phrases added. Biome + typecheck clean.",

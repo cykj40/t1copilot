@@ -50,6 +50,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      drizzle-orm:
+        specifier: ^0.38.3
+        version: 0.38.4(@libsql/client@0.14.0)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.1)(@types/pg@8.11.6)(@types/react@19.2.14)(react@19.2.5)
       lucide-react:
         specifier: ^1.16.0
         version: 1.16.0(react@19.2.5)

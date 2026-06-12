@@ -11,6 +11,7 @@
  */
 
 import { agentInsights, getNeonDb, type NewAgentInsightRow } from '@t1copilot/db'
+import { sql } from 'drizzle-orm'
 import OpenAI from 'openai'
 
 const EMBED_MODEL = 'text-embedding-3-small'
@@ -106,4 +107,62 @@ export async function saveInsight(args: SaveInsightArgs): Promise<SaveInsightRes
   if (!id) throw new Error('Neon insert returned no id')
 
   return { id, skipped: false }
+}
+
+/**
+ * Embeds the query text and retrieves the top-5 most semantically similar
+ * insights from agent_insights via PGVector cosine distance.
+ *
+ * Returns an empty string if SYSTEM_USER_ID, DATABASE_URL, or OPENAI_API_KEY
+ * are not set — graceful degradation for local dev.
+ *
+ * Uses raw sql`<=>` operator with ::vector cast. Do NOT use cosineDistance()
+ * from drizzle-orm — it does not work with the customType vector column
+ * (drizzle-orm issue #5358: computed distance returns 0 on all rows).
+ */
+export async function retrieveMemoryContext(queryText: string, limit = 5): Promise<string> {
+  const userId = process.env.SYSTEM_USER_ID
+  if (!userId) return ''
+
+  const dbUrl = process.env.DATABASE_URL
+  if (!dbUrl) return ''
+
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) return ''
+
+  try {
+    const embedding = await embedText(queryText)
+    const queryVec = `[${embedding.join(',')}]`
+
+    const db = getNeonDb()
+
+    const rows = await db
+      .select({
+        id: agentInsights.id,
+        summary: agentInsights.summary,
+        insightType: agentInsights.insightType,
+        createdAt: agentInsights.createdAt,
+      })
+      .from(agentInsights)
+      .where(sql`${agentInsights.userId} = ${userId} AND ${agentInsights.embedding} IS NOT NULL`)
+      .orderBy(sql`${agentInsights.embedding} <=> ${queryVec}::vector`)
+      .limit(limit)
+
+    if (rows.length === 0) return ''
+
+    const lines = rows.map((row) => {
+      const date = row.createdAt
+        ? new Date(row.createdAt).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+          })
+        : ''
+      return `[${row.insightType}${date ? ` · ${date}` : ''}] ${row.summary}`
+    })
+
+    return lines.join('\n')
+  } catch (err) {
+    console.error('[retrieveMemoryContext] failed:', err)
+    return ''
+  }
 }
