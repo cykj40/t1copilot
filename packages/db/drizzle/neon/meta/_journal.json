@@ -8,6 +8,13 @@
       "when": 1778969050654,
       "tag": "0000_rapid_toad",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1781283789372,
+      "tag": "0001_silent_iron_man",
+      "breakpoints": true
     }
   ]
 }

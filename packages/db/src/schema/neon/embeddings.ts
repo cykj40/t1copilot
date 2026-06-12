@@ -7,7 +7,11 @@ import { users } from './users.js'
 // pgvector column — requires CREATE EXTENSION IF NOT EXISTS vector; in Neon before migrating.
 // IVFFlat indexes for ANN search must be created via raw SQL after migration:
 //   CREATE INDEX ON glucose_embeddings USING ivfflat (embedding vector_cosine_ops);
-const vector = customType<{ data: number[]; driverData: string; config: { dimensions: number } }>({
+export const vectorColumn = customType<{
+  data: number[]
+  driverData: string
+  config: { dimensions: number }
+}>({
   dataType(config) {
     const dim = config?.dimensions ?? 1536
     return `vector(${String(dim)})`
@@ -42,7 +46,7 @@ export const glucoseEmbeddings = pgTable(
       .references(() => users.id),
     windowStart: timestamp('window_start', { withTimezone: true }).notNull(),
     windowEnd: timestamp('window_end', { withTimezone: true }).notNull(),
-    embedding: vector('embedding', { dimensions: 1536 }).notNull(),
+    embedding: vectorColumn('embedding', { dimensions: 1536 }).notNull(),
     metadata: jsonb('metadata').$type<GlucoseWindowMetadata>().notNull(),
     createdAt: timestamp('created_at', { withTimezone: true })
       .$defaultFn(() => new Date())
@@ -68,7 +72,7 @@ export const labEmbeddings = pgTable('lab_embeddings', {
     .references(() => labDocuments.id),
   chunkIndex: integer('chunk_index').notNull(),
   content: text('content').notNull(),
-  embedding: vector('embedding', { dimensions: 1536 }).notNull(),
+  embedding: vectorColumn('embedding', { dimensions: 1536 }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true })
     .$defaultFn(() => new Date())
     .notNull(),
@@ -89,7 +93,7 @@ export const researchEmbeddings = pgTable('research_embeddings', {
     .references(() => researchCache.id),
   chunkIndex: integer('chunk_index').notNull(),
   content: text('content').notNull(),
-  embedding: vector('embedding', { dimensions: 1536 }).notNull(),
+  embedding: vectorColumn('embedding', { dimensions: 1536 }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true })
     .$defaultFn(() => new Date())
     .notNull(),
