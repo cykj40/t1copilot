@@ -537,7 +537,7 @@
         { text: "predict_glucose_impact tool wired: action_type (insulin|carbs|both), insulin_units?, carb_grams?, current_glucose?", done: true },
         { text: "get_baseline_parameters tool wired — surfaces ISF/ICR/basal read-only in artifact", done: true },
         { text: "compare_expected_vs_actual tool wired — event_type, event_timestamp, event_value, current_glucose, window_hours?", done: true },
-        { text: "get_glucose_statistics tool wired — hourers stats cards more accurately than get_glucose_range", done: true },
+        { text: "get_glucose_statistics tool wired — hours-param stats, more accurate than get_glucose_range for stat cards", done: true },
         { text: "System prompt updated: agent calls predict_glucose_impact when user asks about dosing impact", done: true },
         { text: "MSW mocks for new Dexcom modeling tools + tests", done: true },
         { text: "isDefaultParameters() utility — detects when server defaults (ISF=30, ICR=4, basal=30) are still in place", done: true },
@@ -545,7 +545,7 @@
         { text: "/api/baseline POST route — Zod-validated, confirmed:true injected server-side, 400/502 error handling", done: true },
         { text: "BaselineSetupModal — artifact panel card, fires when render_prediction called with default params, no skip/dismiss", done: true },
         { text: "render_prediction gate — calls getBaselineParameters() first, returns requiresSetup:true if defaults detected, blocks predictGlucoseImpact call", done: true },
-        { text: "render_baseline_setup artifactred into ArtifactData union, toolResultToArtifact (AgentChat.tsx), ArtifactRouter", done: true },
+        { text: "render_baseline_setup artifact wired into ArtifactData union, toolResultToArtifact (AgentChat.tsx), ArtifactRouter", done: true },
         { text: "System prompt PARAMETER SAFETY RULE — hard refusal if defaults detected, explicit message when user says they don't know their values", done: true },
         { text: "BaselineParametersForm in /settings — editable, pre-populated, POSTs to /api/baseline, permanent safety warning", done: true },
         { text: "MSW mocks + tests for update_baseline_parameters, /api/baseline route, isDefaultParameters()", done: true },
@@ -593,7 +593,7 @@
         },
         {
           text: "Weekly summary synthesis — agent calls multiple tools, composes render_insight_summary",
-          done: false,
+          done: true,
         },
         {
           text: "Memory migrated from localStorage to Neon agent_insights table via Drizzle",
@@ -612,12 +612,12 @@
           done: true,
         },
         {
-          text: "Migrate memory-store.ts from localStorage to agent_insights Neon table + PGVector semantic retrieval — inject into system prompt via buimoryContext()",
+          text: "Migrate memory-store.ts from localStorage to agent_insights Neon table + PGVector semantic retrieval — inject into system prompt via buildMemoryContext()",
           done: false,
         },
       ],
       notes:
-        "Synthesis agent — calls the most tools of any priority. Key Dexcom tools: analyze_trends, detect_parameter_drift, get_adaptive_insights, get_insulin_events, get_carb_events, get_exercise_events (all UNWIRED — see §4.1). Key Peloton tools: peloton_get_discipline_insights, peloton_detect_hypoglycemia_risk, peloton_muscle_activity, peloton_training_balance. Memory persistence moves from localStorage to Neon agent_insights table.",
+        "Half 1 complete June 7. Wired: analyze_trends, detect_parameter_drift, get_adaptive_insights (Dexcom) + peloton_get_discipline_insights, peloton_detect_hypoglycemia_risk (Peloton). render_insight_summary composes all five via sequential awaits — the Dexcom MCP server cannot handle concurrent calls on one StreamableHTTP session. Remaining (P9.5): get_insulin_events / get_carb_events / get_exercise_events for pattern context, memory migration localStorage → Neon agent_insights + PGVector, /insights InsightFeed wired to live output (currently mock).",
     },
     {
       id: 10,
@@ -710,7 +710,7 @@
     },
     {
       date: "June 7, 2026",
-      text: "P9 Half 1 complete. Insight Agent tools wired on AI SDK route: analyze_trends, detect_parameter_drift, get_adaptive_insights (Dexcom), peloton_get_discipline_insights, peloton_detect_hypoglycemia_risk (Peloton). New render_insight_summary artifact type — synthesizes all 5 tools in Promise.allSettled, graceful degradation if any tool fails. InsightSummaryArtifact renders 5 sections: overall stats, parameter drift (amber/green based on driftDetected boolean), adaptive observations, exercise patterns, post-meal patterns. System prompt updated: render_insight_summary replaces render_weekly_summary for all summary queries. Zod schemas .strict() in packages/mcp-clients/src/schemas/dexcom-insights.ts matching live response shapes. P9.5 (memory migration to Neon) remains.",
+      text: "P9 Half 1 complete. Insight Agent tools wired on AI SDK route: analyze_trends, detect_parameter_drift, get_adaptive_insights (Dexcom), peloton_get_discipline_insights, peloton_detect_hypoglycemia_risk (Peloton). New render_insight_summary artifact type — synthesizes all 5 tools via sequential awaits with per-tool error capture (parallel MCP calls cross-wire responses on the Dexcom server), graceful degradation if any tool fails. InsightSummaryArtifact renders 5 sections: overall stats, parameter drift (amber/green based on driftDetected boolean), adaptive observations, exercise patterns, post-meal patterns. System prompt updated: render_insight_summary replaces render_weekly_summary for all summary queries. Zod schemas .strict() in packages/mcp-clients/src/schemas/dexcom-insights.ts matching live response shapes. P9.5 (memory migration to Neon) remains.",
     },
     {
       date: "June 6, 2026",
@@ -831,6 +831,6 @@
     ).join("");
   }
 
-  state.expanded[7] = true;
+  state.expanded[9] = true;
   render();
 </script>
