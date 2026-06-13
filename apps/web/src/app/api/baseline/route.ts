@@ -1,4 +1,4 @@
-import { updateBaselineParameters } from '@t1copilot/mcp-clients'
+import { DexcomMcpAuthError, updateBaselineParameters } from '@t1copilot/mcp-clients'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -43,9 +43,19 @@ export async function POST(req: Request): Promise<Response> {
     })
   } catch (error) {
     console.error('[/api/baseline] MCP call failed:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to update baseline parameters' },
-      { status: 502 },
-    )
+    if (error instanceof Error) {
+      console.error('[/api/baseline] error type:', error.constructor.name)
+      console.error('[/api/baseline] error message:', error.message)
+    }
+
+    if (error instanceof DexcomMcpAuthError) {
+      return NextResponse.json(
+        { success: false, error: 'Dexcom MCP auth token not configured' },
+        { status: 503 },
+      )
+    }
+
+    const message = error instanceof Error ? error.message : 'Failed to update baseline parameters'
+    return NextResponse.json({ success: false, error: message }, { status: 502 })
   }
 }

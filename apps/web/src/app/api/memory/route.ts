@@ -1,4 +1,4 @@
-import { agentInsights, getNeonDb } from '@t1copilot/db'
+import { agentInsights, getNeonDb } from '@t1copilot/db/neon'
 import { desc, eq, sql } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'

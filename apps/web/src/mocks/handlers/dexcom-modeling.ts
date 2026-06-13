@@ -5,23 +5,16 @@ import { MCP_ENDPOINT, mcpInitResponse } from './dexcom.js'
 
 export const MOCK_UPDATED_BASELINE_PARAMETERS = {
   success: true as const,
-  updatedParameters: {
-    insulinSensitivityFactor: {
-      value: 35,
-      description: 'How much 1 unit of insulin lowers glucose',
-    },
-    insulinToCarbRatio: {
-      value: 5,
-      description: 'Grams of carbs covered by 1 unit',
-    },
-    basalDose: {
-      value: 28,
-      description: 'Total daily basal insulin',
-    },
+  message: 'Parameters updated successfully.',
+  changes: [] as unknown[],
+  baselineParameters: {
+    correctionFactor: 35,
+    insulinToCarbRatio: 5,
+    basalDose: 28,
     basalTiming: 'morning',
     updatedAt: '2026-06-06T12:00:00Z',
   },
-  note: 'Parameters updated successfully.',
+  disclaimer: 'Consult your healthcare provider before changing insulin parameters.',
 }
 
 export const MOCK_BASELINE_PARAMETERS = {
@@ -210,32 +203,38 @@ function resolveUpdateBaselineFixture(args: Record<string, unknown>): unknown {
   }
   const updated = {
     ...MOCK_UPDATED_BASELINE_PARAMETERS,
-    updatedParameters: {
-      ...MOCK_UPDATED_BASELINE_PARAMETERS.updatedParameters,
-      insulinSensitivityFactor: {
-        ...MOCK_UPDATED_BASELINE_PARAMETERS.updatedParameters.insulinSensitivityFactor,
-        value:
-          (args.correction_factor as number | undefined) ??
-          MOCK_UPDATED_BASELINE_PARAMETERS.updatedParameters.insulinSensitivityFactor.value,
-      },
-      insulinToCarbRatio: {
-        ...MOCK_UPDATED_BASELINE_PARAMETERS.updatedParameters.insulinToCarbRatio,
-        value:
-          (args.insulin_to_carb_ratio as number | undefined) ??
-          MOCK_UPDATED_BASELINE_PARAMETERS.updatedParameters.insulinToCarbRatio.value,
-      },
-      basalDose: {
-        ...MOCK_UPDATED_BASELINE_PARAMETERS.updatedParameters.basalDose,
-        value:
-          (args.basal_dose as number | undefined) ??
-          MOCK_UPDATED_BASELINE_PARAMETERS.updatedParameters.basalDose.value,
-      },
+    baselineParameters: {
+      ...MOCK_UPDATED_BASELINE_PARAMETERS.baselineParameters,
+      correctionFactor:
+        (args.correction_factor as number | undefined) ??
+        MOCK_UPDATED_BASELINE_PARAMETERS.baselineParameters.correctionFactor,
+      insulinToCarbRatio:
+        (args.insulin_to_carb_ratio as number | undefined) ??
+        MOCK_UPDATED_BASELINE_PARAMETERS.baselineParameters.insulinToCarbRatio,
+      basalDose:
+        (args.basal_dose as number | undefined) ??
+        MOCK_UPDATED_BASELINE_PARAMETERS.baselineParameters.basalDose,
       ...(typeof args.basal_timing === 'string' ? { basalTiming: args.basal_timing } : {}),
     },
   }
   currentBaselineFixture = {
-    baselineParameters: updated.updatedParameters,
-    note: updated.note,
+    baselineParameters: {
+      insulinSensitivityFactor: {
+        value: updated.baselineParameters.correctionFactor,
+        description: 'How much 1 unit of insulin lowers glucose',
+      },
+      insulinToCarbRatio: {
+        value: updated.baselineParameters.insulinToCarbRatio,
+        description: 'Grams of carbs covered by 1 unit',
+      },
+      basalDose: {
+        value: updated.baselineParameters.basalDose,
+        description: 'Total daily basal insulin',
+      },
+      basalTiming: updated.baselineParameters.basalTiming,
+      updatedAt: updated.baselineParameters.updatedAt,
+    },
+    note: updated.message,
   }
   return updated
 }

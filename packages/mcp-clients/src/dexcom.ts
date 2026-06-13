@@ -20,8 +20,8 @@ import {
   type PredictGlucoseImpactResponse,
   PredictGlucoseImpactResponseSchema,
   type UpdateBaselineParametersArgs,
+  UpdateBaselineParametersRawResponseSchema,
   type UpdateBaselineParametersResponse,
-  UpdateBaselineParametersResponseSchema,
 } from './schemas/dexcom-modeling.js'
 
 export * from './schemas/dexcom-insights.js'
@@ -126,7 +126,7 @@ export async function callDexcomTool(
       throw new Error(`Dexcom MCP tool error: ${JSON.stringify(result.content)}`)
     }
     const first = result.content[0]
-    if (!first || first.type !== 'text') {
+    if (first?.type !== 'text') {
       throw new Error('Unexpected Dexcom MCP response format')
     }
     return JSON.parse(first.text) as unknown
@@ -200,7 +200,30 @@ export async function updateBaselineParameters(
   }
   try {
     const raw = await callDexcomTool(tool, args as Record<string, unknown>)
-    return UpdateBaselineParametersResponseSchema.parse(raw)
+    const parsed = UpdateBaselineParametersRawResponseSchema.parse(raw)
+    const bp = parsed.baselineParameters
+
+    return {
+      success: true,
+      updatedParameters: {
+        insulinSensitivityFactor: {
+          value: bp.correctionFactor,
+          description: `1 unit of insulin lowers glucose by ${String(bp.correctionFactor)} mg/dL`,
+        },
+        insulinToCarbRatio: {
+          value: bp.insulinToCarbRatio,
+          description: `1 unit of insulin covers ${String(bp.insulinToCarbRatio)}g of carbohydrates`,
+        },
+        basalDose: {
+          value: bp.basalDose,
+          description: `${String(bp.basalDose)} units of long-acting insulin, taken ${bp.basalTiming}`,
+        },
+        basalTiming: bp.basalTiming,
+        updatedAt: bp.updatedAt,
+        ...(bp.notes !== undefined ? { notes: bp.notes } : {}),
+      },
+      note: parsed.message,
+    }
   } catch (error) {
     if (error instanceof DexcomMcpAuthError) throw error
     if (error instanceof DexcomMcpError) throw error

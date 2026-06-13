@@ -165,7 +165,7 @@ describe('updateBaselineParameters', () => {
     expect(result.updatedParameters.insulinSensitivityFactor.value).toBe(35)
     expect(result.updatedParameters.insulinToCarbRatio.value).toBe(5)
     expect(result.updatedParameters.basalDose.value).toBe(28)
-    expect(result.note).toBe(MOCK_UPDATED_BASELINE_PARAMETERS.note)
+    expect(result.note).toBe(MOCK_UPDATED_BASELINE_PARAMETERS.message)
   })
 
   it('throws before calling MCP when confirmed is not true', async () => {

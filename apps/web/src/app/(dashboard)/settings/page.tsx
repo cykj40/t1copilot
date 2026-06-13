@@ -9,7 +9,12 @@ async function BaselineParametersSection() {
   try {
     const parameters = await getBaselineParameters()
     return <BaselineParametersForm initialParameters={parameters} />
-  } catch {
+  } catch (error) {
+    console.error('[settings] getBaselineParameters failed:', error)
+    if (error instanceof Error) {
+      console.error('[settings] error type:', error.constructor.name)
+      console.error('[settings] error message:', error.message)
+    }
     return (
       <Card className="bg-card border-border">
         <CardContent className="px-4 py-6">

@@ -1,3 +1,5 @@
+import 'server-only'
+
 /**
  * insight-store.ts
  *
@@ -10,7 +12,7 @@
  * the app functional during local dev without a Neon connection.
  */
 
-import { agentInsights, getNeonDb, type NewAgentInsightRow } from '@t1copilot/db'
+import { agentInsights, getNeonDb, type NewAgentInsightRow } from '@t1copilot/db/neon'
 import { sql } from 'drizzle-orm'
 import OpenAI from 'openai'
 

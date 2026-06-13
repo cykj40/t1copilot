@@ -9,6 +9,10 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./neon": {
+      "import": "./dist/neon.js",
+      "types": "./dist/neon.d.ts"
     }
   },
   "scripts": {

@@ -55,6 +55,6 @@ describe('POST /api/baseline', () => {
     expect(response.status).toBe(502)
     const data = (await response.json()) as { success: boolean; error: string }
     expect(data.success).toBe(false)
-    expect(data.error).toBe('Failed to update baseline parameters')
+    expect(data.error).toContain('Failed to update baseline parameters')
   })
 })

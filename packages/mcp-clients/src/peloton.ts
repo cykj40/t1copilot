@@ -171,7 +171,7 @@ function parseStatusCode(err: Error): number {
 
 export function extractText(response: McpToolResponse): string {
   const first = response.content[0]
-  if (!first || first.type !== 'text') {
+  if (first?.type !== 'text') {
     throw new Error('MCP response has no text content')
   }
   return first.text

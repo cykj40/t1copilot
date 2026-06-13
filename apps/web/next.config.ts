@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
     PELOTON_MCP_SERVER_URL:
       process.env.PELOTON_MCP_SERVER_URL ?? 'https://peloton-mcp-server.fly.dev',
   },
+  serverExternalPackages: ['@libsql/client', 'libsql'],
 }
 
 export default nextConfig

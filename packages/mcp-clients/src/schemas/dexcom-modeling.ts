@@ -60,6 +60,7 @@ export const BaselineParametersResponseSchema = z
         basalDose: ParameterValueSchema,
         basalTiming: z.string(),
         updatedAt: z.string(),
+        notes: z.string().optional(),
       })
       .strict(),
     note: z.string(),
@@ -180,6 +181,26 @@ export const UpdateBaselineParametersArgsSchema = z
     { message: 'At least one parameter field is required' },
   )
 
+/** Raw shape returned by the live Dexcom MCP server for update_baseline_parameters. */
+export const UpdateBaselineParametersRawResponseSchema = z
+  .object({
+    success: z.literal(true),
+    message: z.string(),
+    changes: z.array(z.unknown()),
+    baselineParameters: z
+      .object({
+        correctionFactor: z.number(),
+        insulinToCarbRatio: z.number(),
+        basalDose: z.number(),
+        basalTiming: z.string(),
+        updatedAt: z.string(),
+        notes: z.string().optional(),
+      })
+      .strict(),
+    disclaimer: z.string(),
+  })
+  .strict()
+
 export const UpdateBaselineParametersResponseSchema = z
   .object({
     success: z.literal(true),
@@ -190,6 +211,7 @@ export const UpdateBaselineParametersResponseSchema = z
         basalDose: ParameterValueSchema,
         basalTiming: z.string(),
         updatedAt: z.string(),
+        notes: z.string().optional(),
       })
       .strict(),
     note: z.string(),
