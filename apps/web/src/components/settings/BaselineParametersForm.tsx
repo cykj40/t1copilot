@@ -1,28 +1,63 @@
 'use client'
 
 import type { BaselineParametersResponse } from '@t1copilot/mcp-clients'
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 
-interface BaselineParametersFormProps {
-  initialParameters: BaselineParametersResponse
-}
-
 type FormStatus = 'idle' | 'loading' | 'success' | 'error'
+type LoadState = 'loading' | 'loaded' | 'error'
 
-export function BaselineParametersForm({ initialParameters }: BaselineParametersFormProps) {
-  const [parameters, setParameters] = useState(initialParameters)
-  const [isf, setIsf] = useState(
-    String(parameters.baselineParameters.insulinSensitivityFactor.value),
-  )
-  const [icr, setIcr] = useState(String(parameters.baselineParameters.insulinToCarbRatio.value))
-  const [basalDose, setBasalDose] = useState(String(parameters.baselineParameters.basalDose.value))
-  const [basalTiming, setBasalTiming] = useState(parameters.baselineParameters.basalTiming)
+export function BaselineParametersForm() {
+  const [loadState, setLoadState] = useState<LoadState>('loading')
+  const [loadError, setLoadError] = useState('')
+  const [parameters, setParameters] = useState<BaselineParametersResponse | null>(null)
+
+  const [isf, setIsf] = useState('')
+  const [icr, setIcr] = useState('')
+  const [basalDose, setBasalDose] = useState('')
+  const [basalTiming, setBasalTiming] = useState('')
   const [notes, setNotes] = useState('')
   const [status, setStatus] = useState<FormStatus>('idle')
   const [errorMessage, setErrorMessage] = useState('')
+
+  const fetchParameters = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) {
+      setLoadState('loading')
+    }
+    try {
+      const res = await fetch('/api/baseline', { cache: 'no-store' })
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: string }
+        if (!options?.silent) {
+          setLoadError(data.error ?? 'Failed to load parameters')
+          setLoadState('error')
+        }
+        return
+      }
+      const data = (await res.json()) as {
+        success: boolean
+        parameters: BaselineParametersResponse
+      }
+      const p = data.parameters
+      setParameters(p)
+      setIsf(String(p.baselineParameters.insulinSensitivityFactor.value))
+      setIcr(String(p.baselineParameters.insulinToCarbRatio.value))
+      setBasalDose(String(p.baselineParameters.basalDose.value))
+      setBasalTiming(p.baselineParameters.basalTiming)
+      setLoadState('loaded')
+    } catch {
+      if (!options?.silent) {
+        setLoadError('Failed to load parameters')
+        setLoadState('error')
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    void fetchParameters()
+  }, [fetchParameters])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -49,25 +84,40 @@ export function BaselineParametersForm({ initialParameters }: BaselineParameters
         return
       }
 
-      const data = (await res.json()) as {
-        updatedParameters: BaselineParametersResponse['baselineParameters']
-        note: string
-      }
-
-      setParameters({
-        baselineParameters: data.updatedParameters,
-        note: data.note,
-      })
-      setIsf(String(data.updatedParameters.insulinSensitivityFactor.value))
-      setIcr(String(data.updatedParameters.insulinToCarbRatio.value))
-      setBasalDose(String(data.updatedParameters.basalDose.value))
-      setBasalTiming(data.updatedParameters.basalTiming)
       setNotes('')
       setStatus('success')
+      await fetchParameters({ silent: true })
     } catch {
       setErrorMessage('Failed to save parameters')
       setStatus('error')
     }
+  }
+
+  if (loadState === 'loading') {
+    return (
+      <Card className="bg-card border-border">
+        <CardContent className="px-4 py-6">
+          <p className="text-xs text-muted-foreground text-center">Loading parameters…</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (loadState === 'error') {
+    return (
+      <Card className="bg-card border-border">
+        <CardContent className="px-4 py-6 flex flex-col gap-3">
+          <p className="text-xs text-muted-foreground text-center">{loadError}</p>
+          <button
+            type="button"
+            onClick={() => void fetchParameters()}
+            className="text-xs text-primary hover:underline text-center"
+          >
+            Retry
+          </button>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -163,7 +213,7 @@ export function BaselineParametersForm({ initialParameters }: BaselineParameters
           </div>
 
           <p className="text-[10px] text-muted-foreground/60">
-            Last updated: {parameters.baselineParameters.updatedAt}
+            Last updated: {parameters?.baselineParameters.updatedAt ?? '—'}
           </p>
 
           {status === 'success' && <p className="text-xs text-[#22c55e]">Parameters saved</p>}

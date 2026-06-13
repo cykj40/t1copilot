@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { POST } from '@/app/api/baseline/route'
+import { GET, POST } from '@/app/api/baseline/route'
 import { mcpHandlerWithIsError, resetBaselineFixture } from '@/mocks/handlers/dexcom-modeling'
 import { server } from '@/mocks/node'
 
@@ -12,6 +12,29 @@ function postBaseline(body: Record<string, unknown>) {
     }),
   )
 }
+
+describe('GET /api/baseline', () => {
+  it('returns 200 with parameters on success', async () => {
+    const response = await GET()
+    expect(response.status).toBe(200)
+    const data = (await response.json()) as {
+      success: boolean
+      parameters: { baselineParameters: { insulinSensitivityFactor: { value: number } } }
+    }
+    expect(data.success).toBe(true)
+    expect(data.parameters.baselineParameters.insulinSensitivityFactor.value).toBe(30)
+  })
+
+  it('returns 502 when MCP returns an error', async () => {
+    resetBaselineFixture()
+    server.use(mcpHandlerWithIsError('MCP error -32001: Request timed out'))
+
+    const response = await GET()
+    expect(response.status).toBe(502)
+    const data = (await response.json()) as { success: boolean; error: string }
+    expect(data.success).toBe(false)
+  })
+})
 
 describe('POST /api/baseline', () => {
   it('returns 200 with updated parameters on valid body', async () => {
