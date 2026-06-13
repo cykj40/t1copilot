@@ -163,7 +163,7 @@ export function ArtifactPanel({ artifact, onClose }: ArtifactPanelProps) {
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="p-3">
+        <div id="artifact-print-region" className="p-3">
           {tab === 'preview' ? (
             <ArtifactRouter artifact={artifact} />
           ) : (

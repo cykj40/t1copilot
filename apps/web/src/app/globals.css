@@ -111,3 +111,53 @@
     @apply font-sans;
   }
 }
+
+/* ── PDF / Print export ───────────────────────────────────────────────────── */
+@media print {
+  /* Hide everything on the page */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show only the artifact content */
+  #artifact-print-region,
+  #artifact-print-region * {
+    visibility: visible;
+  }
+
+  /* Position the artifact content to fill the page */
+  #artifact-print-region {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    overflow: visible;
+    background: #ffffff;
+    color: #111111;
+    padding: 2rem;
+    font-size: 11pt;
+    line-height: 1.6;
+  }
+
+  /* Force all text dark-on-white */
+  #artifact-print-region * {
+    color: #111111 !important;
+  }
+
+  /* Preserve clinical glucose status colors */
+  #artifact-print-region .text-\[\#22c55e\] { color: #0f6e56 !important; }
+  #artifact-print-region .text-\[\#ef4444\] { color: #b91c1c !important; }
+  #artifact-print-region .text-\[\#eab308\] { color: #854f0b !important; }
+  #artifact-print-region .text-\[\#f59e0b\] { color: #854f0b !important; }
+
+  /* Keep Recharts SVGs visible */
+  #artifact-print-region svg {
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  /* Page margins */
+  @page {
+    margin: 0.75in;
+    size: letter portrait;
+  }
+}
