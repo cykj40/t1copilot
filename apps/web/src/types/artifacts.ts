@@ -141,6 +141,20 @@ export interface RenderInsightSummaryArtifact {
   disciplineInsights?: string
   hypoRisk?: string
   weekLabel: string
+  eventTimeline?: {
+    summary?: {
+      totalEvents: number
+      totalInsulin: number
+      totalCarbs: number
+      exerciseSessions: number
+    }
+    timeline: Array<{
+      timestamp: string
+      type: 'insulin' | 'carbs' | 'exercise'
+      data: Record<string, unknown>
+      glucoseContext: { value: number; trend: string } | null
+    }>
+  }
 }
 
 export type ArtifactData =
@@ -312,6 +326,7 @@ export type T1Tools = {
       disciplineInsights?: string
       hypoRisk?: string
       weekLabel: string
+      eventTimeline?: RenderInsightSummaryArtifact['eventTimeline']
       error?: string
     }
   }

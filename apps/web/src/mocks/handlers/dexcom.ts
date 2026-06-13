@@ -195,6 +195,39 @@ export const MOCK_GET_ADAPTIVE_INSIGHTS = {
   disclaimer: 'Adaptive insights are model-based. Individual response varies.',
 }
 
+export const MOCK_EVENT_TIMELINE = {
+  period: {
+    start: '2026-06-06T12:00:00.000Z',
+    end: '2026-06-13T12:00:00.000Z',
+  },
+  summary: {
+    totalEvents: 5,
+    totalInsulin: 12,
+    totalCarbs: 85,
+    exerciseSessions: 2,
+  },
+  timeline: [
+    {
+      timestamp: '2026-06-12T08:00:00.000Z',
+      type: 'insulin',
+      data: { units: 4, subtype: 'rapid' },
+      glucoseContext: { value: 142, trend: 'flat' },
+    },
+    {
+      timestamp: '2026-06-11T12:30:00.000Z',
+      type: 'carbs',
+      data: { grams: 45, foodDescription: 'Lunch' },
+      glucoseContext: { value: 118, trend: 'flat' },
+    },
+    {
+      timestamp: '2026-06-10T10:00:00.000Z',
+      type: 'exercise',
+      data: { durationMinutes: 30, activityType: 'Cycling' },
+      glucoseContext: { value: 155, trend: 'singleDown' },
+    },
+  ],
+}
+
 // ── MCP protocol helpers ──────────────────────────────────────────────────────
 
 const MCP_INIT_RESULT = {
@@ -210,6 +243,7 @@ const TOOL_RESULTS: Record<string, unknown> = {
   analyze_trends: MOCK_ANALYZE_TRENDS,
   detect_parameter_drift: MOCK_DETECT_PARAMETER_DRIFT,
   get_adaptive_insights: MOCK_GET_ADAPTIVE_INSIGHTS,
+  get_event_timeline: MOCK_EVENT_TIMELINE,
 }
 
 interface JsonRpcRequest {

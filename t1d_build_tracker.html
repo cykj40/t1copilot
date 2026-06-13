@@ -557,7 +557,7 @@
     {
       id: 9,
       title: "Insight Agent + synthesis feed",
-      status: "inprogress",
+      status: "done",
       subtasks: [
         {
           text: "Build on AI SDK route (/api/chat) — NOT packages/agents (frozen)",
@@ -589,7 +589,7 @@
         },
         {
           text: "get_insulin_events / get_carb_events / get_exercise_events wired for pattern context",
-          done: false,
+          done: true,
         },
         {
           text: "Weekly summary synthesis — agent calls multiple tools, composes render_insight_summary",
@@ -605,7 +605,7 @@
         },
         {
           text: "/insights page InsightFeed wired to live agent output (replace mock data)",
-          done: false,
+          done: true,
         },
         {
           text: "System prompt updated: agent proactively surfaces patterns when user asks for weekly/monthly summary",
@@ -617,7 +617,7 @@
         },
       ],
       notes:
-        "Half 1 complete June 7. P9.5 memory migration complete June 12. Wired: analyze_trends, detect_parameter_drift, get_adaptive_insights (Dexcom) + peloton_get_discipline_insights, peloton_detect_hypoglycemia_risk (Peloton). render_insight_summary fires saveInsight() fire-and-forget — embeds summary via text-embedding-3-small, writes to agent_insights Neon table. retrieveMemoryContext() queries by PGVector cosine similarity (<=> operator, HNSW index, raw sql template) and injects into system prompt sside. /api/memory route (GET/POST/DELETE). MemoryViewer reads and deletes from Neon. localStorage import button retained. Remaining: get_insulin_events / get_carb_events / get_exercise_events for pattern context, /insights InsightFeed wired to live output (currently mock).",
+        "Complete June 13. Half 1 (June 7): analyze_trends, detect_parameter_drift, get_adaptive_insights (Dexcom) + n_get_discipline_insights, peloton_detect_hypoglycemia_risk (Peloton) wired; render_insight_summary artifact with 5 sections. P9.5 (June 12): memory migrated from localStorage to Neon agent_insights + PGVector semantic retrieval via text-embedding-3-small; saveInsight() fire-and-forget in render_insight_summary; retrieveMemoryContext() injected server-side into system prompt; /api/memory route (GET/POST/DELETE); MemoryViewer reads/deletes from Neon. Half 2 (June 13): InsightFeed.tsx wired to live GET /api/memory — shows up to 10 most recent Neon agent_insights rows as InsightCards, formatted insightType titles, actionable flag for drift_alert/hypo_risk, empty state on zero rows or fetch failure. get_event_timeline added as 6th sequential call in render_insight_summary — eventTimeline threaded through artifact type, toolResultToArtifact, InsightSummaryArtifact (new Event context DarkCard: insulin doses, carbs logged, exercise sessions). MSW helpers: memoryHandlerWithData(), MOCK_EVENT_TIMELINE fixture, gvent_timeline in dexcom handlers. Component tests: InsightFeed (5 tests, happy-dom). 106/106 web tests, 33/33 mcp-clients tests, Biome clean, typecheck clean.",
     },
     {
       id: 10,
@@ -700,6 +700,14 @@
   ];
 
   const SESSIONS = [
+    {
+      date: "June 13, 2026",
+      text: "P9 complete — Half 2. InsightFeed.tsx rewritten as client component: fetches GET /api/memory on mount, renders up to 10 most recent Neon agent_insights rows as InsightCards, maps insightType to display titles (weekly_summary → Weekly Summary, drift_alert → Drift Alert, hypo_risk → Hypo Risk, pattern → Pattern), sets actionable:true for drift_alert and hypo_risk, shows empty state on zero rows or fetch failure. /insights page unchanged — hint card was already in place. render_insight_summary in /api/chat/route.ts gets a 6th sequential MCP call: get_event_timeline for the last days??7 days, impotions/dexcom. eventTimeline result threaded into artifact payload, RenderInsightSummaryArtifact type, T1Tools output type, toolResultToArtifact in AgentChat.tsx. InsightSummaryArtifact.tsx renders new Event context DarkCard (insulin doses, carbs logged, exercise sessions) when totalEvents > 0. New MSW helpers: memoryHandlerWithData() for GET /api/memory, MOCK_EVENT_TIMELINE fixture added to dexcom handlers for get_event_timeline. New component test file InsightFeed.test.ts (5 tests: formatInsightType formatting, empty state, card rendering, fetch error handling) — added @testing-library/react + happy-dom dev deps for JSX component testing. 106/106 web tests, 33/33 mcp-clients, Biome clean, typecheck clean. P9 fully complete. Next: P10 Research Agent.",
+    },
+    {
+      date: "June 12, 2026",
+      text: "Baseline parameters fix. /settings was showing 'Could not load parameters' intermittently and POST /api/baseline returning 502 on every save. Root cause: Zod schema mismatch between packages/mcp-clients schemas and live Dexcom MCP response shapes. Two failures: (1) BaselineParametersResponseSchema rejected the live response because the server includes a notes field at the top level not in the schema; (2) UpdateBaselineParametersResponseSchema expected { updatedParameters, note } but the server returns { message, changes, baselineParameters, disclaimer }. Fixed ipackages/mcp-clients/src/schemas/dexcom-modeling.ts: added optional notes to BaselineParametersResponseSchema, added UpdateBaselineParametersRawResponseSchema matching the live MCP shape, kept the normalized UpdateBaselineParametersResponseSchema for the app surface. Updated updateBaselineParameters() in dexcom.ts to parse the raw response and map correctionFactor → insulinSensitivityFactor, etc. MSW fixtures in dexcom-modeling.ts updated to match live shapes. Improved error handling in /api/baseline/route.ts (logs error type + message, 503 for DexcomMcpAuthError, 502 with actual message otherwise) and settings/page.tsx (console.error on load failure). 33/33 mcp-clients tests, 101/101 web tests, Biome clean, typecheck clean. Manual verify: /settings loads ISF 30 / ICR 4 / Basal 32, save succeeds.",
+    },
     {
       date: "June 12, 2026",
       text: "Fix: @libsql/client webpack bundling error. insight-store.ts imported @t1copilot/db which re-exports turso.ts → @libsql/client (native Node bindings) — webpack tried to bundle it client-side. Two-part fix: (1) serverExternalPackages: ['@libsql/client', 'libsql'] in next.config.ts; (2) server-only import guard added to insight-store.ts. serverExternalPackages alone was insufficient because the @t1copilot/db barrel re-exports turso.js unconditionally. Full fix: added @t1copilot/db/neon subpath export in packages/db so Neon-only consumers can import without pulling in Turso. Switched insight-store.ts and /api/memory/route.ts to @t1copilot/db/neon. server-only required explicit devDependency install + Vitest alias. Verified ed: dev server clean, weekly summary prompt returns HTTP 200 with complete render_insight_summary artifact. 101/101 tests, typecheck clean.",

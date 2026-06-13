@@ -35,7 +35,15 @@ function formatHypoRiskDisplay(hypoRisk: string | undefined): string | undefined
 }
 
 export function InsightSummaryArtifact({ artifact }: InsightSummaryArtifactProps) {
-  const { trends, drift, adaptiveInsights, disciplineInsights, hypoRisk, weekLabel } = artifact
+  const {
+    trends,
+    drift,
+    adaptiveInsights,
+    disciplineInsights,
+    hypoRisk,
+    weekLabel,
+    eventTimeline,
+  } = artifact
   const hypoRiskDisplay = formatHypoRiskDisplay(hypoRisk)
   const disclaimer = trends?.disclaimer ?? drift?.disclaimer ?? adaptiveInsights?.disclaimer ?? null
 
@@ -201,6 +209,31 @@ export function InsightSummaryArtifact({ artifact }: InsightSummaryArtifactProps
             </ul>
           )}
           <p className="text-[10px] text-[#a3a3a3]">{trends.postMealPatterns.note}</p>
+        </DarkCard>
+      )}
+
+      {eventTimeline?.summary && eventTimeline.summary.totalEvents > 0 && (
+        <DarkCard title="Event context (last 7 days)">
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <p className="text-[10px] text-[#a3a3a3]">Insulin doses</p>
+              <p className="text-sm font-semibold tabular-nums text-foreground">
+                {String(eventTimeline.summary.totalInsulin)}u
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-[#a3a3a3]">Carbs logged</p>
+              <p className="text-sm font-semibold tabular-nums text-foreground">
+                {String(eventTimeline.summary.totalCarbs)}g
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-[#a3a3a3]">Exercise sessions</p>
+              <p className="text-sm font-semibold tabular-nums text-foreground">
+                {String(eventTimeline.summary.exerciseSessions)}
+              </p>
+            </div>
+          </div>
         </DarkCard>
       )}
 

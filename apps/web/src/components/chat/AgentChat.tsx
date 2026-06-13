@@ -180,6 +180,11 @@ function toolResultToArtifact(
       if (typeof out?.hypoRisk === 'string') {
         insightArtifact.hypoRisk = out.hypoRisk
       }
+      if (out?.eventTimeline !== undefined && out.eventTimeline !== null) {
+        insightArtifact.eventTimeline = out.eventTimeline as NonNullable<
+          RenderInsightSummaryArtifact['eventTimeline']
+        >
+      }
       return insightArtifact
     }
     default:

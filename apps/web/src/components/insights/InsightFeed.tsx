@@ -1,42 +1,89 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import { InsightCard } from './InsightCard'
 
-interface Insight {
+interface ServerMemory {
   id: string
-  title: string
   summary: string
-  confidence: number
-  actionable: boolean
+  insightType: string
+  confidence: number | null
+  createdAt: string | null
 }
 
-const MOCK_INSIGHTS: Insight[] = [
-  {
-    id: '1',
-    title: 'Post-ride glucose drop',
-    summary:
-      'Your glucose drops an average of 28 mg/dL in the 2–3 hours after cycling sessions. Consider a small carb snack post-ride.',
-    confidence: 0.87,
-    actionable: true,
-  },
-  {
-    id: '2',
-    title: 'Morning baseline drift',
-    summary:
-      'Your fasting glucose has trended 15 mg/dL higher this week compared to the prior two weeks.',
-    confidence: 0.74,
-    actionable: false,
-  },
-]
+export function formatInsightType(insightType: string): string {
+  const labels: Record<string, string> = {
+    weekly_summary: 'Weekly Summary',
+    pattern: 'Pattern',
+    drift_alert: 'Drift Alert',
+    hypo_risk: 'Hypo Risk',
+  }
+  return labels[insightType] ?? insightType
+}
+
+function isActionable(insightType: string): boolean {
+  return insightType === 'drift_alert' || insightType === 'hypo_risk'
+}
 
 export function InsightFeed() {
+  const [memories, setMemories] = useState<ServerMemory[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function load() {
+      try {
+        const res = await fetch('/api/memory', { cache: 'no-store' })
+        if (!res.ok) throw new Error('fetch failed')
+        const data = (await res.json()) as { success: boolean; memories?: ServerMemory[] }
+        if (!cancelled) {
+          setMemories((data.memories ?? []).slice(0, 10))
+        }
+      } catch {
+        if (!cancelled) {
+          setMemories([])
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    }
+
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-2">
+        <p className="text-xs text-muted-foreground">Loading insights...</p>
+      </div>
+    )
+  }
+
+  if (memories.length === 0) {
+    return (
+      <div className="flex flex-col gap-2">
+        <p className="text-xs text-muted-foreground">
+          No insights yet. Ask the agent: &quot;Give me a weekly insight summary&quot;
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-2">
-      {MOCK_INSIGHTS.map((insight) => (
+      {memories.map((memory) => (
         <InsightCard
-          key={insight.id}
-          title={insight.title}
-          summary={insight.summary}
-          confidence={insight.confidence}
-          actionable={insight.actionable}
+          key={memory.id}
+          title={formatInsightType(memory.insightType)}
+          summary={memory.summary}
+          confidence={memory.confidence ?? 0.7}
+          actionable={isActionable(memory.insightType)}
         />
       ))}
     </div>

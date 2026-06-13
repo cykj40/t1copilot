@@ -17,6 +17,7 @@ import {
 import type { WorkoutCorrelation } from '@t1copilot/types'
 import { convertToModelMessages, streamText, tool } from 'ai'
 import { z } from 'zod'
+import { type EventTimeline, getEventTimeline } from '@/actions/dexcom'
 import { isDefaultParameters } from '@/lib/baseline-defaults'
 import { getGlucoseRange, getLatestGlucose } from '@/lib/dexcom-mcp'
 import { retrieveMemoryContext, saveInsight } from '@/lib/insight-store'
@@ -509,6 +510,15 @@ export async function POST(req: Request): Promise<Response> {
             }
           }
 
+          let eventTimeline: EventTimeline | null = null
+          try {
+            const now = new Date()
+            const start = new Date(now.getTime() - (days ?? 7) * 24 * 60 * 60 * 1000)
+            eventTimeline = await getEventTimeline(start.toISOString(), now.toISOString())
+          } catch (err) {
+            console.error('[render_insight_summary] get_event_timeline failed:', err)
+          }
+
           const result = {
             weekLabel: label,
             ...(trendsResult.status === 'fulfilled' ? { trends: trendsResult.value } : {}),
@@ -518,6 +528,7 @@ export async function POST(req: Request): Promise<Response> {
               : {}),
             ...(disciplineInsights !== undefined ? { disciplineInsights } : {}),
             ...(hypoRisk !== undefined ? { hypoRisk } : {}),
+            ...(eventTimeline !== null ? { eventTimeline } : {}),
           }
 
           // Persist to Neon agent_insights + embed the summary — fire-and-forget.
