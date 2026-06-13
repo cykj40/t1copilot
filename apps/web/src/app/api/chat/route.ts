@@ -15,7 +15,7 @@ import {
   predictGlucoseImpact,
 } from '@t1copilot/mcp-clients'
 import type { WorkoutCorrelation } from '@t1copilot/types'
-import { convertToModelMessages, streamText, tool } from 'ai'
+import { convertToModelMessages, stepCountIs, streamText, tool } from 'ai'
 import { z } from 'zod'
 import { type EventTimeline, getEventTimeline } from '@/actions/dexcom'
 import { isDefaultParameters } from '@/lib/baseline-defaults'
@@ -74,6 +74,7 @@ export async function POST(req: Request): Promise<Response> {
 
   const result = streamText({
     model: anthropic('claude-sonnet-4-6'),
+    stopWhen: stepCountIs(5),
     system: fullSystemPrompt,
     messages: await convertToModelMessages(messages),
     tools: {
@@ -303,6 +304,28 @@ export async function POST(req: Request): Promise<Response> {
             console.error('[compare_prediction_vs_actual] MCP call failed:', error)
             return {
               error: error instanceof Error ? error.message : 'Comparison failed',
+            }
+          }
+        },
+      }),
+      get_event_timeline: tool({
+        description:
+          'Fetch logged insulin, carb, and exercise events (with glucose context) for a recent ' +
+          "window. Use this to look up the user's own past events — e.g. their last insulin dose — " +
+          'instead of asking them for details that are already logged.',
+        inputSchema: z.object({
+          days: z.number().optional().describe('Days to search — default 7'),
+        }),
+        execute: async ({ days }) => {
+          try {
+            const now = new Date()
+            const start = new Date(now.getTime() - (days ?? 7) * 24 * 60 * 60 * 1000)
+            const timeline = await getEventTimeline(start.toISOString(), now.toISOString())
+            return timeline ?? { timeline: [] }
+          } catch (error) {
+            console.error('[get_event_timeline] MCP call failed:', error)
+            return {
+              error: error instanceof Error ? error.message : 'Failed to load event timeline',
             }
           }
         },
