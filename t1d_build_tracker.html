@@ -706,6 +706,10 @@
   const SESSIONS = [
     {
       date: "June 13, 2026",
+      text: "Agent response completion fix. Root cause: streamText was called with no stopWhen, giving the model a single step — it emitted a lead-in sentence, the tool ran, and no second step existed to read the result and answer. Fix: added stopWhen: stepCountIs(5) to streamText in apps/web/src/app/api/chat/route.ts (imported stepCountIs from 'ai'). Also added get_event_timeline as a first-class AI SDK tool on /api/chat/route.ts so the agent can look up past logged events (last insulin dose, recent carbs, etc.) without asking the user for details already in the timeline. System prompt rewritten: new CORE BEHAVIOR block mandates finishing in one turn, no announce-and-stop, no asking for retrievable data. Tool-triggered response rules rewritten: lead-in is optional, post-tool answer naming specific figures is mandatory. compare_expected_vs_actual rule now routes through get_event_timeline first. Discipline-insights flow auto-backfills via bulk_correlate_workouts then answers. All safety content preserved verbatim. Smoke tested all four prompts: (1) highest glucose this week → named 320 mg/dL at 8:54 AM Jun 7 + weekly peaks table; (2) prediction gate → correctly detected server-default ISF/ICR, explained math, asked to confirm before running — correct behavior; (3) last insulin dose accuracy → pulled 32u long-acting from timeline without asking, ran comparison, explained 168% deviation; (4) discipline glucose drop → auto-backfilled 20 workouts, named Running as biggest drop, flagged today's run starting at 85 mg/dL as hypo risk. 108/108 web tests, 33/33 mcp-clients tests, Biome clean, typecheck clean.",
+    },
+    {
+      date: "June 13, 2026",
       text: "PDF export fixed. window.print() previously dumped the entire 3-panel layout. Fix: added id='artifact-print-region' to the inner scroll content div in ArtifactPanel.tsx; appended @media print rules to globals.css that hide body * then un-hide only #artifact-print-region and its children, position fixed to fill the page, white background with dark text, clinical glucose colors preserved (green/amber/red), Recharts SVGs kept visible, letter portrait margins. No new dependencies. Biome clean, typecheck clean.",
     },
     {
@@ -859,6 +863,6 @@
     ).join("");
   }
 
-  state.expanded[9] = true;
+  state.expanded[10] = true;
   render();
 </script>
