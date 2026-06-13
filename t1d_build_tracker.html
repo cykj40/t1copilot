@@ -421,6 +421,10 @@
           text: "biome check . / pnpm typecheck / 56 tests all green",
           done: true,
         },
+        {
+          text: "PDF export scoped to artifact panel only — @media print targets #artifact-print-region, hides rest of layout",
+          done: true,
+        },
       ],
       notes:
         "Implemented May 23. All verification passed. Dev server running at localhost:3000.",
@@ -700,6 +704,10 @@
   ];
 
   const SESSIONS = [
+    {
+      date: "June 13, 2026",
+      text: "PDF export fixed. window.print() previously dumped the entire 3-panel layout. Fix: added id='artifact-print-region' to the inner scroll content div in ArtifactPanel.tsx; appended @media print rules to globals.css that hide body * then un-hide only #artifact-print-region and its children, position fixed to fill the page, white background with dark text, clinical glucose colors preserved (green/amber/red), Recharts SVGs kept visible, letter portrait margins. No new dependencies. Biome clean, typecheck clean.",
+    },
     {
       date: "June 13, 2026",
       text: "Fix: /settings -32001 RSC timeout on getBaselineParameters. Root cause: BaselineParametersSection was an async server component calling getBaselineParameters() during RSC rendering — a cold StreamableHTTP connection to dexcom-mcp-server.fly.dev opened synchronously on every /settings page load, timing out (-32001) when the Fly.io machine was idle. Fix: added GET /api/baseline handler (mirrors POST error handling — 503 on auth error, 502 on MCP failure); converted BaselineParametersForm from prop-driven (initialParameters: BaselineParametersResponse) to self-fetching client component — fetches /api/baseline on mounoading/error-with-retry/loaded states, re-fetches silently after successful save; removed BaselineParametersSection and server-side getBaselineParameters() call from settings/page.tsx entirely — page now renders <BaselineParametersForm /> directly with zero MCP calls during RSC. Architecture pattern: server components never make cold MCP calls during RSC rendering — same pattern MemoryViewer already used. Added 2 GET tests (success + 502 on MCP error). 108/108 web tests (+2 GET tests), 33/33 mcp-clients, Biome clean, typecheck clean.",
