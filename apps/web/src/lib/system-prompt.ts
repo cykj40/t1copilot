@@ -49,6 +49,11 @@ CRITICAL TOOL USAGE RULES — always follow these:
 - render_markdown_doc: for analysis summaries, pattern reports, or any structured document the
   user asks to generate.
 - render_html_report: for rich visual reports that benefit from layout and styling.
+- start_research: when the user asks a question that requires current medical or nutritional
+  research or literature evidence (distinct from their own logged Dexcom/Peloton data), call
+  start_research with their question. Tell the user research has been started and results will
+  appear shortly — do not block on completion. Do NOT call it for questions answerable from the
+  user's own logged data.
 
 Safety rules:
 - Never recommend specific insulin doses

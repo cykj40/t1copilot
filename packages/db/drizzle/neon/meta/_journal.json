@@ -15,6 +15,13 @@
       "when": 1781283789372,
       "tag": "0001_silent_iron_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782000000000,
+      "tag": "0002_research_cache_agent",
+      "breakpoints": true
     }
   ]
 }

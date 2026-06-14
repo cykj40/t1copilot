@@ -1,7 +1,6 @@
 import { createId } from '@paralleldrive/cuid2'
 import { customType, index, integer, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import { labDocuments } from './labs.js'
-import { researchCache } from './research.js'
 import { users } from './users.js'
 
 // pgvector column — requires CREATE EXTENSION IF NOT EXISTS vector; in Neon before migrating.
@@ -80,24 +79,3 @@ export const labEmbeddings = pgTable('lab_embeddings', {
 
 export type LabEmbeddingRow = typeof labEmbeddings.$inferSelect
 export type NewLabEmbeddingRow = typeof labEmbeddings.$inferInsert
-
-export const researchEmbeddings = pgTable('research_embeddings', {
-  id: text('id')
-    .$defaultFn(() => createId())
-    .primaryKey(),
-  userId: text('user_id')
-    .notNull()
-    .references(() => users.id),
-  researchCacheId: text('research_cache_id')
-    .notNull()
-    .references(() => researchCache.id),
-  chunkIndex: integer('chunk_index').notNull(),
-  content: text('content').notNull(),
-  embedding: vectorColumn('embedding', { dimensions: 1536 }).notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true })
-    .$defaultFn(() => new Date())
-    .notNull(),
-})
-
-export type ResearchEmbeddingRow = typeof researchEmbeddings.$inferSelect
-export type NewResearchEmbeddingRow = typeof researchEmbeddings.$inferInsert

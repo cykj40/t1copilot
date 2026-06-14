@@ -19,8 +19,6 @@ import OpenAI from 'openai'
 const EMBED_MODEL = 'text-embedding-3-small'
 const EMBED_DIMENSIONS = 1536
 
-// ── Embedding ─────────────────────────────────────────────────────────────────
-
 async function embedText(text: string): Promise<number[]> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) throw new Error('OPENAI_API_KEY is not set')
@@ -39,6 +37,8 @@ async function embedText(text: string): Promise<number[]> {
 
   return embedding
 }
+
+export { embedText }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

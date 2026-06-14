@@ -21,6 +21,7 @@ import { type EventTimeline, getEventTimeline } from '@/actions/dexcom'
 import { isDefaultParameters } from '@/lib/baseline-defaults'
 import { getGlucoseRange, getLatestGlucose } from '@/lib/dexcom-mcp'
 import { retrieveMemoryContext, saveInsight } from '@/lib/insight-store'
+import { executeStartResearch, StartResearchInputSchema } from '@/lib/research-store'
 import { T1_SYSTEM_PROMPT } from '@/lib/system-prompt'
 import type { T1UIMessage } from '@/types/artifacts'
 
@@ -531,6 +532,13 @@ export async function POST(req: Request): Promise<Response> {
 
           return result
         },
+      }),
+      start_research: tool({
+        description:
+          'Start a background deep-research job on a medical or nutritional literature question. ' +
+          "Use for current evidence and research — not for the user's own logged Dexcom/Peloton data.",
+        inputSchema: StartResearchInputSchema,
+        execute: async ({ query }) => executeStartResearch(query),
       }),
     },
   })
