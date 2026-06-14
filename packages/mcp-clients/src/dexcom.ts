@@ -32,6 +32,7 @@ const DEXCOM_MCP_URL = process.env.DEXCOM_MCP_SERVER_URL
   : 'https://dexcom-mcp-server.fly.dev/mcp'
 
 const DEXCOM_MCP_TIMEOUT_MS = 30000
+const COLD_START_RETRY_DELAY_MS = 1500
 
 export class DexcomMcpAuthError extends Error {
   constructor() {
@@ -48,6 +49,67 @@ export class DexcomMcpError extends Error {
     this.name = 'DexcomMcpError'
     this.tool = tool
   }
+}
+
+export class DexcomMcpTimeoutError extends DexcomMcpError {
+  constructor(tool: string, cause?: unknown) {
+    super(tool, 'Dexcom MCP server request timed out — the server may be waking from idle')
+    this.name = 'DexcomMcpTimeoutError'
+    if (cause !== undefined) {
+      ;(this as Error & { cause?: unknown }).cause = cause
+    }
+  }
+}
+
+export function isDexcomColdStartError(error: unknown): boolean {
+  if (error instanceof DexcomMcpTimeoutError) return true
+
+  if (typeof error !== 'object' || error === null) return false
+
+  const err = error as Error & { code?: string; cause?: unknown }
+  if (err.code === 'UND_ERR_BODY_TIMEOUT') return true
+  if (err.name === 'BodyTimeoutError') return true
+
+  const message = err.message ?? ''
+  if (message.includes('Body Timeout Error') || message.includes('UND_ERR_BODY_TIMEOUT')) {
+    return true
+  }
+  if (err.name === 'TypeError' && message.includes('terminated')) return true
+  if (message.includes('-32001') || message.includes('Request timed out')) return true
+
+  if (err.cause !== undefined && err.cause !== error) {
+    return isDexcomColdStartError(err.cause)
+  }
+
+  return false
+}
+
+function toDexcomToolError(toolName: string, error: unknown): Error {
+  if (error instanceof DexcomMcpAuthError) return error
+  if (error instanceof DexcomMcpError) return error
+  if (isDexcomColdStartError(error)) return new DexcomMcpTimeoutError(toolName, error)
+  const message = error instanceof Error ? error.message : String(error)
+  return new DexcomMcpError(toolName, message)
+}
+
+export async function callDexcomToolWithRetry(
+  toolName: string,
+  args: Record<string, unknown> = {},
+  options?: { retries?: number },
+): Promise<unknown> {
+  const retries = options?.retries ?? 1
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await callDexcomTool(toolName, args)
+    } catch (err) {
+      if (err instanceof DexcomMcpAuthError) throw err
+      if (!isDexcomColdStartError(err) || attempt === retries) throw err
+      await new Promise((resolve) => setTimeout(resolve, COLD_START_RETRY_DELAY_MS))
+    }
+  }
+
+  throw new DexcomMcpTimeoutError(toolName)
 }
 
 export async function createDexcomMcpClient(): Promise<Client> {
@@ -95,6 +157,9 @@ export async function createDexcomMcpClient(): Promise<Client> {
     // rather than the optional-only `string` required by Transport under exactOptionalPropertyTypes.
     await client.connect(transport as unknown as Parameters<typeof client.connect>[0])
   } catch (error) {
+    if (isDexcomColdStartError(error)) {
+      throw new DexcomMcpTimeoutError('connect', error)
+    }
     throw new Error(
       `Failed to connect to Dexcom MCP server: ${error instanceof Error ? error.message : String(error)}`,
     )
@@ -119,8 +184,9 @@ export async function callDexcomTool(
   toolName: string,
   args: Record<string, unknown> = {},
 ): Promise<unknown> {
-  const client = await createDexcomMcpClient()
+  let client: Client | undefined
   try {
+    client = await createDexcomMcpClient()
     const result = (await client.callTool({ name: toolName, arguments: args })) as McpCallToolResult
     if (result.isError === true) {
       throw new Error(`Dexcom MCP tool error: ${JSON.stringify(result.content)}`)
@@ -129,9 +195,15 @@ export async function callDexcomTool(
     if (first?.type !== 'text') {
       throw new Error('Unexpected Dexcom MCP response format')
     }
-    return JSON.parse(first.text) as unknown
+    const parsed = JSON.parse(first.text) as unknown
+    if (parsed === null || parsed === undefined) {
+      throw new DexcomMcpError(toolName, 'Dexcom MCP returned empty tool result')
+    }
+    return parsed
+  } catch (error) {
+    throw toDexcomToolError(toolName, error)
   } finally {
-    await client.close()
+    await client?.close()
   }
 }
 

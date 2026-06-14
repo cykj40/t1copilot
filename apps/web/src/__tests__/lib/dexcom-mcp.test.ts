@@ -1,5 +1,6 @@
+import { DexcomMcpTimeoutError } from '@t1copilot/mcp-clients'
 import { HttpResponse, http } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   getDailySummary,
   getGlucoseRange,
@@ -14,6 +15,8 @@ import {
   MOCK_LOW_GLUCOSE,
   mcpHandlerWithBadToolResponse,
   mcpHandlerWithFixture,
+  mcpHandlerWithPersistentColdStartFailure,
+  mcpHandlerWithTimeoutOnce,
 } from '@/mocks/handlers/dexcom'
 import { server } from '@/mocks/node'
 
@@ -148,6 +151,44 @@ describe('getGlucoseRange', () => {
     )
 
     await expect(getGlucoseRange(start, end)).rejects.toThrow()
+  })
+
+  it('retries once after a cold-start timeout and returns data', async () => {
+    vi.useFakeTimers()
+    server.use(mcpHandlerWithTimeoutOnce('get_glucose_range', MOCK_GLUCOSE_RANGE))
+
+    const promise = getGlucoseRange(start, end)
+    await vi.runAllTimersAsync()
+    const result = await promise
+
+    expect(result.readingCount).toBe(3)
+    vi.useRealTimers()
+  })
+
+  it('throws DexcomMcpTimeoutError when both attempts fail with cold-start errors', async () => {
+    vi.useFakeTimers()
+    server.use(mcpHandlerWithPersistentColdStartFailure('get_glucose_range'))
+
+    const promise = getGlucoseRange(start, end).catch((e: unknown) => e)
+    await vi.runAllTimersAsync()
+    const err = await promise
+
+    expect(err).toBeInstanceOf(DexcomMcpTimeoutError)
+    vi.useRealTimers()
+  })
+
+  it('does not retry on HTTP 401', async () => {
+    let postCount = 0
+    server.use(
+      http.post(MCP_ENDPOINT, () => {
+        postCount++
+        return new HttpResponse(null, { status: 401 })
+      }),
+      http.delete(MCP_ENDPOINT, () => new HttpResponse(null, { status: 200 })),
+    )
+
+    await expect(getGlucoseRange(start, end)).rejects.toThrow()
+    expect(postCount).toBe(1)
   })
 })
 

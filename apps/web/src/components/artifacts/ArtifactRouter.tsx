@@ -8,6 +8,7 @@ import { HtmlReportArtifact } from './HtmlReportArtifact'
 import { InsightSummaryArtifact } from './InsightSummaryArtifact'
 import { MarkdownDocArtifact } from './MarkdownDocArtifact'
 import { PredictionArtifact } from './PredictionArtifact'
+import { ResearchResultsArtifact } from './ResearchResultsArtifact'
 import { WeeklySummaryArtifact } from './WeeklySummaryArtifact'
 import { WorkoutCorrelationArtifact } from './WorkoutCorrelationArtifact'
 
@@ -39,6 +40,8 @@ export function ArtifactRouter({ artifact }: ArtifactRouterProps) {
       return <BaselineSetupModal />
     case 'render_insight_summary':
       return <InsightSummaryArtifact artifact={artifact} />
+    case 'render_research_results':
+      return <ResearchResultsArtifact artifact={artifact} />
     default:
       return null
   }

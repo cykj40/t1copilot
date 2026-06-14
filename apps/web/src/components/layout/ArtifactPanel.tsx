@@ -30,6 +30,8 @@ function getTitle(artifact: ArtifactData): string {
       return artifact.title
     case 'render_html_report':
       return artifact.title
+    case 'render_research_results':
+      return artifact.query.length > 40 ? `${artifact.query.slice(0, 40)}…` : artifact.query
     default:
       return 'Artifact'
   }

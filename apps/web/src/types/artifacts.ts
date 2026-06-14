@@ -157,6 +157,16 @@ export interface RenderInsightSummaryArtifact {
   }
 }
 
+export interface RenderResearchResultsArtifact {
+  artifactType: 'render_research_results'
+  id: string
+  query: string
+  status: 'pending' | 'complete' | 'error'
+  sourceUrl: string | null
+  content: string | null
+  agentSummary: string | null
+}
+
 export type ArtifactData =
   | GlucoseChartArtifact
   | InsightCardArtifact
@@ -174,6 +184,7 @@ export type ArtifactData =
   | RenderBaselineParametersArtifact
   | RenderBaselineSetupArtifact
   | RenderInsightSummaryArtifact
+  | RenderResearchResultsArtifact
 
 // ── T1 tool types for useChat generic ────────────────────────────────────────
 
@@ -327,6 +338,16 @@ export type T1Tools = {
       hypoRisk?: string
       weekLabel: string
       eventTimeline?: RenderInsightSummaryArtifact['eventTimeline']
+      error?: string
+    }
+  }
+  start_research: {
+    input: { query: string }
+    output: {
+      success: boolean
+      interactionId?: string
+      cacheId?: string
+      status?: 'pending'
       error?: string
     }
   }

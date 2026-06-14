@@ -1,4 +1,4 @@
-import { callDexcomTool } from '@t1copilot/mcp-clients'
+import { callDexcomTool, callDexcomToolWithRetry } from '@t1copilot/mcp-clients'
 import type { TrendArrow } from '@t1copilot/types'
 import { unstable_noStore as noStore } from 'next/cache'
 import { cache } from 'react'
@@ -80,7 +80,10 @@ export const getLatestGlucose = cache(async (): Promise<LatestGlucose> => {
 
 export const getGlucoseRange = cache(async (start: string, end: string): Promise<GlucoseRange> => {
   noStore()
-  const raw = await callDexcomTool('get_glucose_range', { start_time: start, end_time: end })
+  const raw = await callDexcomToolWithRetry('get_glucose_range', {
+    start_time: start,
+    end_time: end,
+  })
   return GlucoseRangeSchema.parse(raw)
 })
 

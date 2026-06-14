@@ -1,6 +1,6 @@
 'use server'
 
-import { callDexcomTool } from '@t1copilot/mcp-clients'
+import { callDexcomToolWithRetry } from '@t1copilot/mcp-clients'
 import { unstable_noStore as noStore } from 'next/cache'
 import { z } from 'zod'
 
@@ -54,7 +54,7 @@ export async function getEventTimeline(
 ): Promise<EventTimeline | null> {
   noStore()
   try {
-    const raw = await callDexcomTool('get_event_timeline', {
+    const raw = await callDexcomToolWithRetry('get_event_timeline', {
       start_time: startTime,
       end_time: endTime,
     })

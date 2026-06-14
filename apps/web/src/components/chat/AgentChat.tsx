@@ -187,6 +187,21 @@ function toolResultToArtifact(
       }
       return insightArtifact
     }
+    case 'start_research': {
+      if (out?.success !== true) return null
+      const cacheId = out.cacheId as string | undefined
+      const query = (inp.query as string | undefined) ?? ''
+      if (!cacheId) return null
+      return {
+        artifactType: 'render_research_results',
+        id: cacheId,
+        query,
+        status: 'pending',
+        sourceUrl: null,
+        content: null,
+        agentSummary: null,
+      }
+    }
     default:
       return null
   }

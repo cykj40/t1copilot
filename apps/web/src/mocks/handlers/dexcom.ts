@@ -360,3 +360,79 @@ export function mcpHandlerCapturingToolCalls(
     return HttpResponse.json({ jsonrpc: '2.0', id: body.id, result: {} })
   })
 }
+
+/**
+ * First tools/call for `toolName` returns `failResponse`; subsequent calls succeed with `fixture`.
+ * Other tools use default fixtures.
+ */
+export function mcpHandlerWithFailOnce(
+  toolName: string,
+  fixture: unknown,
+  failResponse: () => Response = () => HttpResponse.error(),
+) {
+  let toolCallCount = 0
+
+  return http.post(MCP_ENDPOINT, async ({ request }) => {
+    const body = (await request.json()) as JsonRpcRequest
+    if (body.method === 'initialize') return mcpInitResponse(body.id)
+    if (body.id === undefined) return new HttpResponse(null, { status: 202 })
+
+    if (body.method === 'tools/call') {
+      const name = (body.params?.name as string | undefined) ?? ''
+      const args = (body.params?.arguments as Record<string, unknown> | undefined) ?? {}
+
+      if (name === toolName) {
+        toolCallCount++
+        if (toolCallCount === 1) return failResponse()
+        return mcpToolResponse(body.id, fixture)
+      }
+
+      const result = TOOL_RESULTS[name] ?? resolveModelingToolResult(name, args) ?? {}
+      return mcpToolResponse(body.id, result)
+    }
+
+    return HttpResponse.json({ jsonrpc: '2.0', id: body.id, result: {} })
+  })
+}
+
+/**
+ * First tools/call for `toolName` returns a JSON-RPC -32001 timeout error; second succeeds.
+ */
+export function mcpHandlerWithTimeoutOnce(toolName: string, fixture: unknown) {
+  return mcpHandlerWithFailOnce(toolName, fixture, () =>
+    HttpResponse.json({
+      jsonrpc: '2.0',
+      id: 1,
+      error: { code: -32001, message: 'Request timed out' },
+    }),
+  )
+}
+
+/**
+ * Every tools/call for `toolName` returns a JSON-RPC -32001 timeout error.
+ */
+export function mcpHandlerWithPersistentColdStartFailure(toolName: string) {
+  return http.post(MCP_ENDPOINT, async ({ request }) => {
+    const body = (await request.json()) as JsonRpcRequest
+    if (body.method === 'initialize') return mcpInitResponse(body.id)
+    if (body.id === undefined) return new HttpResponse(null, { status: 202 })
+
+    if (body.method === 'tools/call') {
+      const name = (body.params?.name as string | undefined) ?? ''
+      const args = (body.params?.arguments as Record<string, unknown> | undefined) ?? {}
+
+      if (name === toolName) {
+        return HttpResponse.json({
+          jsonrpc: '2.0',
+          id: body.id,
+          error: { code: -32001, message: 'Request timed out' },
+        })
+      }
+
+      const result = TOOL_RESULTS[name] ?? resolveModelingToolResult(name, args) ?? {}
+      return mcpToolResponse(body.id, result)
+    }
+
+    return HttpResponse.json({ jsonrpc: '2.0', id: body.id, result: {} })
+  })
+}
