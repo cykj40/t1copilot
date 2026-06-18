@@ -626,43 +626,43 @@
     {
       id: 10,
       title: "Research Agent — Google Deep Research API",
-      status: "todo",
+      status: "done",
       subtasks: [
         {
           text: "Build on AI SDK route (/api/chat) — NOT packages/agents (frozen)",
-          done: false,
+          done: true,
         },
         {
           text: "render_research_results artifact type — research card with source, summary, relevance tags",
-          done: false,
+          done: true,
         },
         {
           text: "Google Deep Research API integration — AI SDK tool that delegates to Gemini deep research",
-          done: false,
+          done: true,
         },
         {
           text: "research_cache table write via Drizzle (Neon) — store query, source_url, content, agent_summary",
-          done: false,
+          done: true,
         },
         {
           text: "PGVector embedding of research results for semantic retrieval",
-          done: false,
+          done: true,
         },
         {
           text: "/research page wired to live agent output (replace mock results)",
-          done: false,
+          done: true,
         },
         {
           text: "System prompt updated: agent calls research tool when user asks about medical literature or evidence",
-          done: false,
+          done: true,
         },
         {
           text: "Medical disclaimer on all research outputs — 'discuss findings with your care team'",
-          done: false,
+          done: true,
         },
       ],
       notes:
-        "Research agent is the only one that calls an external LLM (Gemini Deep Research). All results cached in Neon research_cache + PGVector for semantic re-use. Medical disclaimer mandatory on all outputs.",
+        "Complete June 14. P10.1 (foundation): GeminiResearchError + stemas for the Interactions API (packages/mcp-clients/src/gemini-research.ts, schemas/gemini-research.ts), research_cache migrated (interaction_id unique, status enum, embedding + HNSW cosine index, dropped source_title/relevance_tags), start_research AI SDK tool (fire-and-forget — inserts pending row, returns immediately), GET /api/research/[id] polling route (embeds via text-embedding-3-small + writes content/agentSummary/sourceUrl on Gemini completed, 503/502 error pattern from baseline route). System prompt: research tool triggers on literature/evidence questions only, not user's own CGM/Peloton data. 160 tests (10 mcp-clients + 9 web... totals: 43 mcp-clients / 117 web). P10.2 (UI): render_research_results artifact — pending state polls every 4s with spinner, complete state shows agentSummary + expandable content + sourceUrl link + medical disclaimer, error state with query context; /research page rewired — query form via LogContext->AgentChat sendMessage, getRecentResearch() server action lists 10recent research_cache rows (SYSTEM_USER_ID-scoped). Verified no dead sourceTitle/relevanceTags references. 170 tests total (43 mcp-clients / 127 web), typecheck + Biome clean. Both passes used Sonnet — scoped implementation against an established artifact/tool pattern, no architectural ambiguity.",
     },
     {
       id: 11,
@@ -704,6 +704,22 @@
   ];
 
   const SESSIONS = [
+    {
+      date: "June 14, 2026",
+      text: "Peloton MCP auth fail-open remediation. Security audit found peloton-mcp-server's /mcp check (src/http-server.ts:164) and isAuthorized() (lines 24-27, guards /update-peloton-token) both fail open if MCP_AUTH_TOKEN is unset — silent, no log, no startup failure, unlike dexcom-mcp-server which exits at boot. Live deployment was SAFE today only because the Fly secret happened to be set (verified: /mcp returned 401 for no/wrong token). Fix (Opus, peloton-mcp-server repo): added startup guard in src/http-server.ts mirroring dexcom's pattern but adapted since peloton is HTTP-only (no transport flag exists) — guard placed unconditionally at the single startHttpServer bootstrap point, process.exit(1) if MCP_AUTH_TOKEN unset; removed the `mcpAuthToken &&` short-circuit on /mcp (now unconditional); removed `if (!mcpAuthToken) return true` early-return in isAuthorized(). Token comparison method unchanged (exact-match against env var). Local verification: missing token -> exits with clear error before binding port; correct token -> 200 on /mcp initialize, wrong/missing -> 401 on both /mcp and /update-peloton-token; tsc clean; 117/117 vitest passing (no Biome in this repo). Deployed via flyctl deploy -a peloton-mcp-server, verified live post-deploy: GET /health -> 200 {status:ok}, GET /mcp (no auth) -> 401 {error:Unauthorized}. .env.example placeholder-URL fix (DEXCOM_MCP_SERVER_URL/PELOTON_MCP_SERVER_URL pointing at live Fly instances) remains outstanding, separate from auth.",
+    },
+    {
+      date: "June 14, 2026",
+      text: "Dexcom MCP cold-start fix, two parts. Root cause (surfaced by P10 smoke testing): dexcom-mcp-server.fly.dev was allowed to fully autosuspend (min_machines_running=0); first request after idle hit BodyTimeoutError/UND_ERR_BODY_TIMEOUT or MCP -32001, and callDexcomTool was swallowing the transport failure as null/empty instead of throwing -- GlucoseRangeSchema.parse(raw) then failed on all-required-fields-undefined, surfacing as a confusing ZodError rather than the real timeout. Part 1 (client-side, packages/mcp-clients/src/dexcom.ts): added DexcomMcpTimeoutError + isDexcomColdStartError() matching BodyTimeoutError/UND_ERR_BODY_TIMEOUT/TypeError:terminated/MCP -32001 (including cause-chain walk); callDexcomToolWithRetry() -- one retry, 1.5s delay, skips retry on auth/validation errors; callDexcomTool now guards null/empty payloads and normalizes cold-start errors to DexcomMcpTimeoutError. Wired into getGlucoseRange (dexcom-mcp.ts) and getEventTimeline (actions/dexcom.ts) -- the two tools that surfaced the bug. New MSW helpers (mcpHandlerWithTimeoutOnce, mcpHandlerWithPersistentColdStartFailure) + tests for retry-success, retry-exhaustion, no-retry-on-401. Graceful degradation preserved (render_glucose_chart -> empty readings not ZodError; getEventTimeline -> null). 180 tests passing (47 mcp-clients / 133 web). Other cold-start-sensitive tools (getBaselineParameters, getLatestGlucose, etc.) not yet wired -- flagged as trivial follow-up. Part 2 (infra, dexcom-mcp-server repo): set min_machines_running 0 -> 1 in fly.toml (Machines v2 [http_service], auto_stop_machines/auto_start_machines unchanged, second machine in count=2 can still autostop). shared-cpu-1x:256MB always-on ~ $2/month. Deployed; verified one machine stays started through 3min idle, health check 90ms warm (vs 5.6s cold boot immediately post-deploy). fly.toml change is local, needs manual commit. P10.3 retry remains as safety net for genuine transient blips.",
+    },
+    {
+      date: "June 14, 2026",
+      text: "P10.2 complete. Replaced /research mocks with live data. Step 0 audit confirmed old mock types referenced dropped source_title/relevance_tags fields (removed from research_cache in P10.1) -- no dead references remained anywhere in apps/web/src after this pass (grep-verified). render_research_results added to ArtifactData union + T1Tools.start_research; AgentChat toolResultToArtifact maps successful start_research -> pending artifact (id: cacheId), success:false -> no artifact (error surfaced inline in chat). ResearchResultsArtifact: pending state shows query + spinner, polls GET /api/research/[id] every 4s, stops on status change and clears interval on unmount; complete state shows agentSummary, expandable full content, sourceUrl link (target=_blank, rel=noopener noreferrer), and medical disclaimer always present; error state shows query + failure message; poll={false} for history rows so already-complete rows don't re-poll. ArtifactRouter + ArtifactPanel wired. New actions/research.ts -- getRecentResearch(), Zod-validated, SYSTEM_USER_ID-scoped, ordered by createdAt desc, limit 10. /research page: server-fetched history (RSC-safe Neon read, no cold-MCP-call problem) + client query form via useLogContext().submitLogMessage('Research: ...'). 10 new tests (6 component + 4 action); 170 total passing (43 mcp-clients / 127 web), typecheck + Biome clean.",
+    },
+    {
+      date: "June 14, 2026",
+      text: "P10.1 complete -- Research Agent foundation. Pulled live Gemini Interactions API docs via Context7 (agent: deep-research-preview-04-2026, Api-Revision: 2026-05-20, POST /v1beta/interactions with background:true, GET /v1beta/interactions/{id} to poll, completed response has steps[].content[] with text + annotations for citations -- all unverified against live API until smoke-tested). Built: packages/mcp-clients/src/schemas/gemini-research.ts (strict create-request schema, permissive response/step schemas, status enum with .catch('failed'), extractModelOutputText() pulls text + url annotations from the last model_output step); packages/mcp-clients/src/gemini-research.ts (GeminiResearchError, startResearchInteraction(), pollResearchInteraction(), sequential-only per repo convention). research_cache schema updated in packages/db/src/schema/neon/research.ts (moved researchEmbeddings here to break circular import with embeddings.ts) -- migration 0002_research_cache_agent.sql hand-authored after drizzle-kit generate stalled on an interactive create-vs-rename prompt for interaction_id; dropped source_title/relevance_tags, added interaction_id (unique), status, nullable content, embedding + HNSW cosine index, updated_at; applied clean via pnpm db:migrate:neon. start_research tool wired in /api/chat/route.ts via executeStartResearch() in research-store.ts -- fire-and-forget, inserts pending row, returns {success, interactionId, cacheId, status}. GET /api/research/[id] polls Gemini when status===pending, embeds + completes row on Gemini completed, 503/502 error pattern from baseline route. System prompt: research trigger guidance (literature questions only). 160 tests (43 mcp-clients / 117 web), typecheck + Biome clean, Neon migration applied. Artifact UI deferred to P10.2.",
+    },
     {
       date: "June 13, 2026",
       text: "Agent response completion fix. Root cause: streamText was called with no stopWhen, giving the model a single step — it emitted a lead-in sentence, the tool ran, and no second step existed to read the result and answer. Fix: added stopWhen: stepCountIs(5) to streamText in apps/web/src/app/api/chat/route.ts (imported stepCountIs from 'ai'). Also added get_event_timeline as a first-class AI SDK tool on /api/chat/route.ts so the agent can look up past logged events (last insulin dose, recent carbs, etc.) without asking the user for details already in the timeline. System prompt rewritten: new CORE BEHAVIOR block mandates finishing in one turn, no announce-and-stop, no asking for retrievable data. Tool-triggered response rules rewritten: lead-in is optional, post-tool answer naming specific figures is mandatory. compare_expected_vs_actual rule now routes through get_event_timeline first. Discipline-insights flow auto-backfills via bulk_correlate_workouts then answers. All safety content preserved verbatim. Smoke tested all four prompts: (1) highest glucose this week → named 320 mg/dL at 8:54 AM Jun 7 + weekly peaks table; (2) prediction gate → correctly detected server-default ISF/ICR, explained math, asked to confirm before running — correct behavior; (3) last insulin dose accuracy → pulled 32u long-acting from timeline without asking, ran comparison, explained 168% deviation; (4) discipline glucose drop → auto-backfilled 20 workouts, named Running as biggest drop, flagged today's run starting at 85 mg/dL as hypo risk. 108/108 web tests, 33/33 mcp-clients tests, Biome clean, typecheck clean.",
