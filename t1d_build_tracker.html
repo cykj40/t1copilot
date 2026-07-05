@@ -666,44 +666,56 @@
     },
     {
       id: 11,
-      title: "Laminar eval suite (@lmnr-ai/lmnr)",
+      title: "Braintrust eval suite (braintrust + autoevals)",
       status: "todo",
       subtasks: [
         {
-          text: "packages/evals scaffold: data/, evaluators.ts, executors.ts, types.ts",
+          text: "P11.0 — extract runAgent() agent core from /api/chat/route.ts (model, messages, tool set as args; MCP wrappers injectable) so evals invoke the agent directly, never over HTTP — diagram-draft agent-core.ts pattern",
           done: false,
         },
         {
-          text: "Layer 1 — tool selection evals: does the agent call the right AI SDK tool for a given query?",
+          text: "packages/evals scaffold am-draft structure): datasets/golden.json, buildMessages.ts, scorers/ (one file per scorer), one *.eval.ts per layer, tsconfig extending base",
           done: false,
         },
         {
-          text: "Layer 2 — per-tool behavior evals with mocked MCP responses (deterministic)",
+          text: "Golden dataset: typed GoldenTestCase (id, input, seed?, expectedCharacteristics, expectedKeywords?, difficulty, category) covering all six agent roles",
           done: false,
         },
         {
-          text: "Layer 3 — safety negative evals (CI gate): HITL not bypassed, no auto-log, no ISF/ICR mutation",
+          text: "Layer 1 — routing.eval.ts: deterministic tool-selection scorer (right AI SDK tool called for a given query; tool execute() stubbed)",
           done: false,
         },
         {
-          text: "Layer 4 — LLM judge: output quality + T1D safety/HITL judge (gpt-5.1 as evaluator)",
+          text: "Layer 2 — behavior.eval.ts: per-tool behavior with MSW-mocked MCP responses; deterministic scorers using Braintrust EvalScorer signature, return null to skip non-applicable cases",
           done: false,
         },
         {
-          text: "pnpm eval / pnpm eval:safety scripts wired; LMNR_API_KEY in env",
+          text: "Layer 3 — safety.eval.ts (CI gate): negative evals — HITL not bypassed, no auto-log, no ISF/ICR mutation, no prediction on default baseline parameters",
           done: false,
         },
         {
-          text: "safety.eval.ts blocks CI on failure — gates on §9.2 medical safety rules",
+          text: "Layer 4 — quality.eval.ts: LLM judge via autoevals LLMClassifierFromSpec — Insight output quality + second stricter pass on T1D safety/HITL rubric",
+          done: false,
+        },
+        {
+          text: "pnpm eval / pnpm eval:safety scripts (dotenv + braintrust eval); BRAINTRUST_API_KEY in env schema, LMNR_API_KEY removed",
+          done: false,
+        },
+        {
+          text: "CI: braintrustdata/eval-action@v1 with terminate_on_failure on safety.eval.ts — blocks merge on §10 medical safety rule violations",
           done: false,
         },
       ],
       notes:
-        "Evals run against the AI SDK route tools, not the frozen LangGraph graph. Safety eval (Layer 3) is the most critical — it verifies HITL invariants that the existing vitest safety suite covers at unit level. Laminar extends that to integration-level agent behavior with realistic inputs. pnpm test:safety (vitest) remains the fast CI gate; Laminar evals are the deeper behavioral gate.",
+        "Decision July 5, 2026: Laminar replaced by Braintrust (braintrust + autoevals devDeps). Structure mirrors the diagram-draft reference repo (github.com/cykj40/diagram-draft): golden.json dataset + typed scorers + one Eval() definition per layer, run via `braintrust eval`. Every run becomes a Braintrust experiment auto-tagged with git branch/commit/dirty — zero manual expering, fits the GitHub Desktop manual-commit workflow. Evals run against the AI SDK route tools via the extracted runAgent() core — never the frozen LangGraph graph, never over HTTP. MSW MCP mock server (already built) is the injectable MCP layer for Layers 2–3. Judge model configurable via LLMClassifierFromSpec model param (original plan: gpt-5.1). pnpm test:safety (vitest) remains the fast unit CI gate; safety.eval.ts is the deeper behavioral CI gate.",
     },
   ];
 
   const SESSIONS = [
+    {
+      date: "July 5, 2026",
+      text: "P11 eval stack decision: Laminar (@lmnr-ai/lmnr) dropped, Braintrust (braintrust + autoevals) adopted. Structure will mirror the diagram-draft reference repo (github.com/cykj40/diagram-draft/evals): datasets/golden.json with typed GoldenTestCase (id / inpued? / expectedCharacteristics / expectedKeywords? / difficulty / category), buildMessages.ts harness, scorers/ one-file-per-scorer using Braintrust's EvalScorer signature ({name, score, metadata}; return null to skip non-applicable cases so per-category metrics stay clean), and one *.eval.ts per layer. Four layers map 1:1 onto the existing plan: routing (tool selection, deterministic), behavior (MSW-mocked MCP, deterministic), safety (negative HITL/parameter invariants — CI-gated via braintrustdata/eval-action@v1 with terminate_on_failure), quality (LLM judge via autoevals LLMClassifierFromSpec + a second stricter T1D-safety/HITL judge pass). New prerequisite identified: P11.0 extracts runAgent() from route.ts (diagram-draft agent-core.ts pattern) so evals call the agent core directly instead of over HTTP; the existing MSW MCP mock server becomes the injectable MCP layer. Env: BRAINTRUST_API_KEY replaces LMNR_API_KEY. Braintrust auto-tags every experiment with git branch/commit/dirty — no manual naming.tructions doc bumped to v1.6 with matching edits (§1.2, §3 stack table + removed-from-stack list, new §8.5 eval structure section, §9.2 row 11). LangSmith stays for tracing; consolidating tracing into Braintrust logging is a separate future decision, not part of P11. No code changes this session — decision + documentation only.",
+    },
     {
       date: "June 14, 2026",
       text: "Peloton MCP auth fail-open remediation. Security audit found peloton-mcp-server's /mcp check (src/http-server.ts:164) and isAuthorized() (lines 24-27, guards /update-peloton-token) both fail open if MCP_AUTH_TOKEN is unset — silent, no log, no startup failure, unlike dexcom-mcp-server which exits at boot. Live deployment was SAFE today only because the Fly secret happened to be set (verified: /mcp returned 401 for no/wrong token). Fix (Opus, peloton-mcp-server repo): added startup guard in src/http-server.ts mirroring dexcom's pattern but adapted since peloton is HTTP-only (no transport flag exists) — guard placed unconditionally at the single startHttpServer bootstrap point, process.exit(1) if MCP_AUTH_TOKEN unset; removed the `mcpAuthToken &&` short-circuit on /mcp (now unconditional); removed `if (!mcpAuthToken) return true` early-return in isAuthorized(). Token comparison method unchanged (exact-match against env var). Local verification: missing token -> exits with clear error before binding port; correct token -> 200 on /mcp initialize, wrong/missing -> 401 on both /mcp and /update-peloton-token; tsc clean; 117/117 vitest passing (no Biome in this repo). Deployed via flyctl deploy -a peloton-mcp-server, verified live post-deploy: GET /health -> 200 {status:ok}, GET /mcp (no auth) -> 401 {error:Unauthorized}. .env.example placeholder-URL fix (DEXCOM_MCP_SERVER_URL/PELOTON_MCP_SERVER_URL pointing at live Fly instances) remains outstanding, separate from auth.",
