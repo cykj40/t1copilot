@@ -13,10 +13,10 @@
     "test:coverage": "vitest run --coverage",
     "test:safety": "vitest run src/__tests__/safety",
     "eval": "pnpm eval:routing && pnpm eval:behavior && pnpm eval:safety && pnpm eval:quality",
-    "eval:routing": "dotenv -e ../../.env.local -- tsx --conditions=react-server evals/routing.eval.ts",
-    "eval:behavior": "dotenv -e ../../.env.local -- tsx --conditions=react-server evals/behavior.eval.ts",
-    "eval:safety": "dotenv -e ../../.env.local -- tsx --conditions=react-server evals/safety.eval.ts",
-    "eval:quality": "dotenv -e ../../.env.local -- tsx --conditions=react-server evals/quality.eval.ts",
+    "eval:routing": "dotenv -e ../../.env -- tsx --conditions=react-server evals/routing.eval.ts",
+    "eval:behavior": "dotenv -e ../../.env -- tsx --conditions=react-server evals/behavior.eval.ts",
+    "eval:safety": "dotenv -e ../../.env -- tsx --conditions=react-server evals/safety.eval.ts",
+    "eval:quality": "dotenv -e ../../.env -- tsx --conditions=react-server evals/quality.eval.ts",
     "eval:validate": "tsx --conditions=react-server evals/validate-datasets.ts"
   },
   "dependencies": {
