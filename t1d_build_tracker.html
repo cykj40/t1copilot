@@ -667,54 +667,66 @@
     {
       id: 11,
       title: "Braintrust eval suite (braintrust + autoevals)",
-      status: "todo",
+      status: "inprogress",
       subtasks: [
         {
-          text: "P11.0 — extract runAgent() agent core from /api/chat/route.ts (model, messages, tool set as args; MCP wrappers injectable) so evals invoke the agent directly, never over HTTP — diagram-draft agent-core.ts pattern",
+          text: "P11.0 — agent-core.ts extraction (522 lines): AGENT_MODEL_ID + AGENT_STOP_STEP_COUNT constants, buildSystemPrompt(memorySection), agentTools (all 16 tools moved verbatim, render_glucose_chart → start_research). route.ts dropped 547→44 lines, now a pure streamText wrapper. 133/133 tests unchanged, typecheck + Biome clean, no dependencies added.",
+          done: true,
+        },
+        {
+          text: "apps/web/evals/ scaffold (17 files, diagram-draft structure) — built inside apps/web, not a separate packages/evals worap.ts (MSW bypass mode + gemini/memory handlers, fails fast on missing API keys), types.ts, runner.ts (generateText with agent-core's model/prompt/tools), validate-datasets.ts",
+          done: true,
+        },
+        {
+          text: "Datasets: routing.json (12), behavior.json (7), safety.json (8), quality.json (5) — per-layer Zod schemas (RoutingCase / BehaviorCase / SafetyCase / QualityCase) instead of one shared GoldenTestCase type; eval:validate confirms all four parse and every referenced tool name exists in agentTools",
+          done: true,
+        },
+        {
+          text: "Layer 1 — routing.eval.ts + toolSelectionScorer: written, eval:validate passes. Not yet run live against the real agent.",
+          done: true,
+        },
+        {
+          text: "Layer 2 — behavior.eval.ts + toolCalledScorer / toolInputScorer / outputShapeScorer (beh-stats-shape and beh-insight-composition paths derived from MOCK_STATS_24H / MOCK_ANALYZE_TRENDS fixtures): written, eval:validate passes. Not yet ru.",
+          done: true,
+        },
+        {
+          text: "Layer 3 — safety.eval.ts + safetyInvariantScorer (CI gate): per-case fixture override + resetEvalHandlers(), exits 1 on any case scoring below 1. Written, eval:validate passes. NOT yet run live — the 8 safety cases have not been confirmed against a real agent response.",
+          done: true,
+        },
+        {
+          text: "Layer 4 — quality.eval.ts + insightQualityJudge / t1dSafetyJudge via the Braintrust AI proxy (existing openai package, use_cot: true, claude-sonnet-4-6); exits 1 if t1dSafetyJudge scores below 1 on any case. Written, eval:validate passes. NOT yet run live.",
+          done: true,
+        },
+        {
+          text: "pnpm eval / eval:routing / eval:behavior / eval:safety / eval:quality / eval:validate scripts wired in apps/web/package.json; BRAINTRUST_API_KEY added to .env.example (LMNR_API_KEY was never actually added in an earlier session, so there was nothing to remove)",
+          done: true,
+        },
+        {
+          text: "CI: .github/workflows/safety-evals.yml on PRs to main — runs tsx evals/safety.eval.ts directly rather than braintrustdata/eval-action@v1 (dropped in favor of direct invocation, matching the --conditions=react-server + dotenv setup the local scripts already need). Workflow file exists but is NOT yet active: ANTHROPIC_API_KEY and BRAINTRUST_API_KEY repo secrets have not been added.",
           done: false,
         },
         {
-          text: "packages/evals scaffold am-draft structure): datasets/golden.json, buildMessages.ts, scorers/ (one file per scorer), one *.eval.ts per layer, tsconfig extending base",
-          done: false,
+          text: "Unplanned fix required for tsx to load agent-core at all: tsx resolves workspace packages through the CJS path, which needs a 'default' export condition. Added to packages/mcp-clients, packages/db (root + ./neon), packages/types, packages/utils package.json exports.",
+          done: true,
         },
         {
-          text: "Golden dataset: typed GoldenTestCase (id, input, seed?, expectedCharacteristics, expectedKeywords?, difficulty, category) covering all six agent roles",
-          done: false,
-        },
-        {
-          text: "Layer 1 — routing.eval.ts: deterministic tool-selection scorer (right AI SDK tool called for a given query; tool execute() stubbed)",
-          done: false,
-        },
-        {
-          text: "Layer 2 — behavior.eval.ts: per-tool behavior with MSW-mocked MCP responses; deterministic scorers using Braintrust EvalScorer signature, return null to skip non-applicable cases",
-          done: false,
-        },
-        {
-          text: "Layer 3 — safety.eval.ts (CI gate): negative evals — HITL not bypassed, no auto-log, no ISF/ICR mutation, no prediction on default baseline parameters",
-          done: false,
-        },
-        {
-          text: "Layer 4 — quality.eval.ts: LLM judge via autoevals LLMClassifierFromSpec — Insight output quality + second stricter pass on T1D safety/HITL rubric",
-          done: false,
-        },
-        {
-          text: "pnpm eval / pnpm eval:safety scripts (dotenv + braintrust eval); BRAINTRUST_API_KEY in env schema, LMNR_API_KEY removed",
-          done: false,
-        },
-        {
-          text: "CI: braintrustdata/eval-action@v1 with terminate_on_failure on safety.eval.ts — blocks merge on §10 medical safety rule violations",
+          text: "Live verification: run pnpm eval:safety and pnpm eval:quality against the real Anthropic + Braintrust APIs at least once. Datasets were authored against fixture/code inspection, not a live run — first live pass may surface caserections. Blocks calling P11 done.",
           done: false,
         },
       ],
       notes:
-        "Decision July 5, 2026: Laminar replaced by Braintrust (braintrust + autoevals devDeps). Structure mirrors the diagram-draft reference repo (github.com/cykj40/diagram-draft): golden.json dataset + typed scorers + one Eval() definition per layer, run via `braintrust eval`. Every run becomes a Braintrust experiment auto-tagged with git branch/commit/dirty — zero manual expering, fits the GitHub Desktop manual-commit workflow. Evals run against the AI SDK route tools via the extracted runAgent() core — never the frozen LangGraph graph, never over HTTP. MSW MCP mock server (already built) is the injectable MCP layer for Layers 2–3. Judge model configurable via LLMClassifierFromSpec model param (original plan: gpt-5.1). pnpm test:safety (vitest) remains the fast unit CI gate; safety.eval.ts is the deeper behavioral CI gate.",
+        "Two-part build complete (July 5, 2026), pending live verification before this priority is done. P11.0: agent-core.ts extra16 tools moved verbatim, route.ts 547→44 lines, 133/133 tests unchanged. P11.1: apps/web/evals/ scaffold (17 files) — 4 datasets, 32 cases total (12 routing / 7 behavior / 8 safety / 5 quality), validated via eval:validate (dataset parse + tool-name cross-check against agentTools, all green). Layer 1–4 eval files written with matching scorers: toolSelectionScorer, toolCalledScorer + toolInputScorer + outputShapeScorer, safetyInvariantScorer, insightQualityJudge + t1dSafetyJudge (Braintrust AI proxy via the existing openai package). safety.eval.ts and quality.eval.ts both exit 1 on any failing case — that exit code is the actual CI gate mechanism. CI workflow (.github/workflows/safety-evals.yml) runs tsx directly rather than braintrustdata/eval-action@v1 — dropped in favor of direct invocation, matching the --conditions=react-server + dotenv setup the local scripts already need. Unplanned fix: tsx resolves workspace packages through the CJS path, which needs a 'default' export condition — added tcp-clients, packages/db (root + ./neon), packages/types, packages/utils. Nothing committed — sitting as uncommitted changes for review in GitHub Desktop. Remaining before P11 moves to done: (1) add ANTHROPIC_API_KEY + BRAINTRUST_API_KEY as GitHub repo secrets, (2) run pnpm eval:safety and pnpm eval:quality live at least once — the 8 safety cases and 5 quality-judge cases have only been validated for shape (Zod parse + tool-name existence), never executed against the real agent.",
     },
   ];
 
   const SESSIONS = [
     {
       date: "July 5, 2026",
-      text: "P11 eval stack decision: Laminar (@lmnr-ai/lmnr) dropped, Braintrust (braintrust + autoevals) adopted. Structure will mirror the diagram-draft reference repo (github.com/cykj40/diagram-draft/evals): datasets/golden.json with typed GoldenTestCase (id / inpued? / expectedCharacteristics / expectedKeywords? / difficulty / category), buildMessages.ts harness, scorers/ one-file-per-scorer using Braintrust's EvalScorer signature ({name, score, metadata}; return null to skip non-applicable cases so per-category metrics stay clean), and one *.eval.ts per layer. Four layers map 1:1 onto the existing plan: routing (tool selection, deterministic), behavior (MSW-mocked MCP, deterministic), safety (negative HITL/parameter invariants — CI-gated via braintrustdata/eval-action@v1 with terminate_on_failure), quality (LLM judge via autoevals LLMClassifierFromSpec + a second stricter T1D-safety/HITL judge pass). New prerequisite identified: P11.0 extracts runAgent() from route.ts (diagram-draft agent-core.ts pattern) so evals call the agent core directly instead of over HTTP; the existing MSW MCP mock server becomes the injectable MCP layer. Env: BRAINTRUST_API_KEY replaces LMNR_API_KEY. Braintrust auto-tags every experiment with git branch/commit/dirty — no manual naming.tructions doc bumped to v1.6 with matching edits (§1.2, §3 stack table + removed-from-stack list, new §8.5 eval structure section, §9.2 row 11). LangSmith stays for tracing; consolidating tracing into Braintrust logging is a separate future decision, not part of P11. No code changes this session — decision + documentation only.",
+      text: "P11 implementation session (two Claude Code passes against the P11.0/P11.1 prompts). Pass 1 — agent-core.ts extraction: created apps/web/src/lib/agent-core.ts (522 lines) with AGENT_MODEL_ID/AGENT_STOP_STEP_COUNT constants, buildSystemPrompt(memorySection), module-private SyncWorkoutsInputSchema/BulkCorrelateInputSchema/getTemporalContext(), and agentTools (all 16 tools moved verbatim from render_glucose_chart through start_research). route.ts rewritten to 44 lines — body parsing, memory retrieval, memorySection assembly, then streamText(agentTools, buildSystemPrompt). Verification: typecheck clean, Biome clean (fixed 2 pre-existing formatting flags: a long import in route.ts, a ternary in agent-core.ts), 133/133 tests passinnchanged from pre-refactor baseline), grep -c \"tool({\" confirms 16 in agent-core.ts / 0 in route.ts. Pass 2 — Braintrust eval suite scaffold: created apps/web/evals/ (17 files — bootstrap.ts, types.ts, runner.ts, validate-datasets.ts; datasets routing.json/behavior.json/safety.json/quality.json with 12/7/8/5 cases; scorers toolSelection.ts/toolArgs.ts/textRules.ts/safety.ts/judge.ts; eval runners routing.eval.ts/behavior.eval.ts/safety.eval.ts/quality.eval.ts). Modified apps/web/package.json (braintrust, autoevals, tsx, dotenv-cli devDeps + eval scripts), .env.example (BRAINTRUST_API_KEY), .github/workflows/safety-evals.yml (new CI job, direct tsx invocation rather than braintrustdata/eval-action@v1). Unplanned fix outside stated scope: tsx resolves workspace packages via the CJS path, which requires a 'default' export condition — added to packages/mcp-clients, packages/db (root + ./neon), packages/types, packages/utils package.json. Verification: typecheck clean, Biome clean, 133/133 tests unchangel:validate green (routing=12 behavior=7 safety=8 quality=5, all tool names cross-checked against agentTools). Live evals (pnpm eval:safety, pnpm eval:quality) intentionally not run this session — real API cost, deferred to a deliberate verification pass. Nothing committed in either pass; both sit as uncommitted diffs for GitHub Desktop review. Also fixed, while in the file: four pre-existing corrupted text fragments in the P11 subtasks/notes and the earlier July 5 decision entry (missing character runs — '(diagr', 'iment nam', 'ut / se', 'Ins' — apparently dropped by a prior automated edit), unrelated to today's implementation work.",
+    },
+    {
+      date: "July 5, 2026",
+      text: "P11 eval stack decision: Laminar (@lmnr-ai/lmnr) dropped, Braintrust (braintrust + autoevals) adopted. Structure will mirror the diagram-draft reference repo (github.com/cykj40/diagram-draft/evals): datasets/golden.json with typed GoldenTestCase (id / input / seed? / expectedCharacteristics / expectedKeywords? / difficulty / category), buildMessages.ts harness, scorers/ one-file-per-scorer using Braintrust's EvalScorer signature ({name, score, metadata}; return null to skip non-applicable cases so per-category metrics stay clean), and one *.eval.ts per layer. Four layers map 1:1 onto the existing plan: routing (tool selection, deterministic), behavior (MSW-mocked MCP, deterministic), safety (negative HITL/parameter invariants — CI-gated via braintrustdata/eval-action@v1 with terminate_on_failure), quality (LLM judge via autoevals LLMClassifierFromSpec + a second stricter T1D-safety/HITL judge pass). New prerequisite identified: P11.0 extracts runAgent() from route.ts (diagram-draft agent-core.ts pattern) so evals call the agent core directly instead of over HTTP; the existing MSW MCP mock server becomes the injectable MCP layer. Env: BRAINTRUST_API_KEY replaces LMNR_API_KEY. Braintrust auto-tags every experiment with git branch/commit/dirty — no manual naming. Instructions doc bumped to v1.6 with matching edits (§1.2, §3 stack table + removed-from-stack list, new §8.5 eval structure section, §9.2 row 11). LangSmith stays for tracing; consolidating tracing into Braintrust logging is a separate future decision, not part of P11. No code changes this session — decision + documentation only.",
     },
     {
       date: "June 14, 2026",
