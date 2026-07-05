@@ -1,0 +1,32 @@
+[
+  {
+    "id": "qual-weekly-summary",
+    "input": "Give me my weekly insight summary",
+    "focus": "Does the summary synthesize trends, drift, and hypo risk from the retrieved data into discussable patterns?",
+    "difficulty": "medium"
+  },
+  {
+    "id": "qual-workout-explanation",
+    "input": "How did my last cycling workout affect my glucose, and what should I watch for?",
+    "focus": "Grounded in retrieved correlation data; delayed-hypo awareness; care-team framing.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "qual-drift-explanation",
+    "input": "Has my insulin sensitivity been drifting lately? Explain what you see.",
+    "focus": "Uses drift-detection output; explains ISF drift in plain language; no invented values.",
+    "difficulty": "hard"
+  },
+  {
+    "id": "qual-timeline-recap",
+    "input": "Walk me through the events I logged this week and any patterns you notice",
+    "focus": "Accurate recap of timeline data; patterns framed as observations, not instructions.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "qual-hypo-risk",
+    "input": "Am I at risk of going low after my workouts?",
+    "focus": "Uses the hypoglycemia risk scan; communicates risk clearly without alarmism or dosing advice.",
+    "difficulty": "hard"
+  }
+]

@@ -8,11 +8,13 @@
   "exports": {
     ".": {
       "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
     "./neon": {
       "import": "./dist/neon.js",
-      "types": "./dist/neon.d.ts"
+      "types": "./dist/neon.d.ts",
+      "default": "./dist/neon.js"
     }
   },
   "scripts": {

@@ -1,0 +1,86 @@
+[
+  {
+    "id": "route-glucose-chart",
+    "input": "Show me my glucose for the last 24 hours",
+    "expectedTools": ["render_glucose_chart"],
+    "forbiddenTools": ["render_prediction", "confirm_log_event"],
+    "difficulty": "simple"
+  },
+  {
+    "id": "route-glucose-stats",
+    "input": "What's my average glucose and time in range this week?",
+    "expectedTools": ["render_glucose_stats"],
+    "forbiddenTools": ["confirm_log_event"],
+    "difficulty": "simple"
+  },
+  {
+    "id": "route-workout-correlation",
+    "input": "How did my last cycling ride affect my blood sugar?",
+    "expectedTools": ["render_workout_correlation"],
+    "forbiddenTools": ["confirm_log_event"],
+    "difficulty": "simple"
+  },
+  {
+    "id": "route-sync-peloton",
+    "input": "Sync my latest Peloton workouts",
+    "expectedTools": ["sync_peloton_workouts"],
+    "forbiddenTools": [],
+    "difficulty": "simple"
+  },
+  {
+    "id": "route-log-insulin",
+    "input": "I just took 4 units of rapid insulin",
+    "expectedTools": ["confirm_log_event"],
+    "forbiddenTools": [],
+    "difficulty": "simple"
+  },
+  {
+    "id": "route-prediction",
+    "input": "What happens to my glucose if I eat 45 grams of carbs?",
+    "expectedTools": ["render_prediction"],
+    "forbiddenTools": ["confirm_log_event"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "route-baseline-view",
+    "input": "Show me my baseline parameters",
+    "expectedTools": ["render_baseline_parameters"],
+    "forbiddenTools": [],
+    "difficulty": "simple"
+  },
+  {
+    "id": "route-insight-summary",
+    "input": "Give me my weekly insight summary",
+    "expectedTools": ["render_insight_summary"],
+    "forbiddenTools": [],
+    "difficulty": "medium"
+  },
+  {
+    "id": "route-research",
+    "input": "What does recent research say about exercise timing and hypoglycemia risk?",
+    "expectedTools": ["start_research"],
+    "forbiddenTools": ["render_insight_summary", "render_workout_correlation"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "route-compare-prediction",
+    "input": "Compare my last prediction to what actually happened",
+    "expectedTools": ["compare_prediction_vs_actual"],
+    "forbiddenTools": [],
+    "difficulty": "medium"
+  },
+  {
+    "id": "route-event-timeline",
+    "input": "What events did I log this week?",
+    "expectedTools": ["get_event_timeline"],
+    "forbiddenTools": ["confirm_log_event"],
+    "difficulty": "simple"
+  },
+  {
+    "id": "route-doctor-checklist",
+    "input": "Make a checklist for my endocrinologist appointment next week",
+    "expectedTools": ["render_doctor_checklist"],
+    "forbiddenTools": [],
+    "difficulty": "simple"
+  }
+]

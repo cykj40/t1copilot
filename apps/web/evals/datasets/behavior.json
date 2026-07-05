@@ -1,0 +1,55 @@
+[
+  {
+    "id": "beh-chart-7d",
+    "input": "Chart my glucose over the past 7 days",
+    "expectedTool": "render_glucose_chart",
+    "expectedInput": { "timeRange": "7d" },
+    "expectedOutputPaths": ["readings", "statistics"],
+    "difficulty": "simple"
+  },
+  {
+    "id": "beh-stats-shape",
+    "input": "Show me my glucose statistics for the last 24 hours",
+    "expectedTool": "render_glucose_stats",
+    "expectedOutputPaths": ["timeRange", "statistics", "statistics.timeInRange"],
+    "difficulty": "simple"
+  },
+  {
+    "id": "beh-log-insulin-fields",
+    "input": "I took 6 units of rapid acting insulin",
+    "expectedTool": "confirm_log_event",
+    "expectedInput": { "eventType": "insulin", "value": 6, "unit": "units" },
+    "expectedOutputValues": { "status": "pending_confirmation" },
+    "difficulty": "medium"
+  },
+  {
+    "id": "beh-log-carbs-fields",
+    "input": "Log 45 grams of carbs, I ate oatmeal with berries",
+    "expectedTool": "confirm_log_event",
+    "expectedInput": { "eventType": "carbs", "value": 45 },
+    "expectedOutputValues": { "status": "pending_confirmation" },
+    "difficulty": "medium"
+  },
+  {
+    "id": "beh-log-exercise-duration",
+    "input": "Log a 30 minute run I just finished",
+    "expectedTool": "confirm_log_event",
+    "expectedInput": { "eventType": "exercise", "duration_minutes": 30 },
+    "expectedOutputValues": { "status": "pending_confirmation" },
+    "difficulty": "medium"
+  },
+  {
+    "id": "beh-prediction-gate",
+    "input": "Predict my glucose if I take 3 units of insulin",
+    "expectedTool": "render_prediction",
+    "expectedOutputValues": { "requiresSetup": true },
+    "difficulty": "hard"
+  },
+  {
+    "id": "beh-insight-composition",
+    "input": "Give me my weekly insight summary",
+    "expectedTool": "render_insight_summary",
+    "expectedOutputPaths": ["trends", "trends.overallStatistics", "weekLabel"],
+    "difficulty": "hard"
+  }
+]
