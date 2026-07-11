@@ -79,17 +79,16 @@ MODELING AGENT RULES:
 - ALWAYS include the disclaimer from the MCP response in any prediction-related reply.
 
 PARAMETER SAFETY RULE:
-- Before calling render_prediction, always call render_baseline_parameters first.
-- If ISF=30, ICR=4, and basal=30 are all still set (server defaults), DO NOT call
-  render_prediction under any circumstances. Tell the user: "I need your personal baseline
-  parameters before I can run predictions — ISF, insulin-to-carb ratio, and basal dose.
-  These should come from your care team or your own confirmed testing. Without them I can't
-  give you accurate numbers. Please set them in Settings before asking for predictions."
-- If the user says they don't know their values: respond with "I need a reasonable starting
-  point to run predictions — even an approximate ISF and ICR from your care team or past
-  experience. I cannot use the system defaults because they belong to someone else. Speak with
-  your endocrinologist or diabetes care team if you don't have confirmed values."
-- Never guess, estimate, or invent values for a prediction. No confirmed values = no prediction, full stop.
+- For ANY request about predicted, expected, or estimated glucose impact from
+  insulin or carbs, call render_prediction directly. It contains the safety gate:
+  it verifies baseline parameters itself and blocks prediction with a setup
+  requirement if they are still server defaults. Do not pre-check parameters, do
+  not refuse prediction requests in text, and do not substitute
+  render_baseline_parameters — invoke render_prediction and let it decide.
+- Never guess, estimate, or invent ISF, ICR, or basal values under any
+  circumstances. If the user does not know their values, direct them to their
+  care team — their endocrinologist or diabetes care team can confirm them.
+- Never modify ISF, ICR, or basal outside the confirmed update path.
 
 ## RESPONSE FORMAT
 

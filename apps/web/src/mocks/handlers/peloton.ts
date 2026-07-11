@@ -39,10 +39,10 @@ export const MOCK_PELOTON_SYNC_TEXT =
 export const MOCK_PELOTON_RAW_WORKOUTS = [
   {
     id: 'w1',
-    title: '45 min Cycling',
+    title: '30 min Cycling',
     fitness_discipline: 'cycling',
-    start_time: Math.floor(new Date('2026-05-23T10:00:00.000Z').getTime() / 1000),
-    duration_seconds: 2700,
+    start_time: Math.floor(new Date('2026-06-10T10:00:00.000Z').getTime() / 1000),
+    duration_seconds: 1800,
     output_watts: 180,
   },
 ]
@@ -50,13 +50,26 @@ export const MOCK_PELOTON_RAW_WORKOUTS = [
 export const MOCK_PELOTON_CORRELATION = {
   workoutId: 'w1',
   discipline: 'Cycling',
-  durationMinutes: 45,
-  startTime: '2026-05-23T10:00:00.000Z',
+  durationMinutes: 30,
+  startTime: '2026-06-10T10:00:00.000Z',
   hoursAgo: 2,
-  glucoseDropMgdl: 28,
+  glucoseDropMgdl: 25,
   hypoRisk: 'moderate',
-  preWorkoutGlucose: 148,
-  postWorkoutGlucose: 96,
+  preWorkoutGlucose: 155,
+  postWorkoutGlucose: 130,
+}
+
+function resolvePelotonToolResult(toolName: string, args: Record<string, unknown>): unknown {
+  if (toolName === 'peloton_get_workouts' && args.json_response === true) {
+    return MOCK_PELOTON_RAW_WORKOUTS
+  }
+
+  if (toolName === 'peloton_analyze_glucose_correlation') {
+    const workoutId = args.workout_id as string | undefined
+    if (workoutId === 'w1') return MOCK_PELOTON_CORRELATION
+  }
+
+  return TOOL_RESULTS[toolName] ?? {}
 }
 
 // ── MCP protocol helpers ──────────────────────────────────────────────────────
@@ -70,7 +83,6 @@ const MCP_INIT_RESULT = {
 const TOOL_RESULTS: Record<string, unknown> = {
   peloton_get_workouts: MOCK_PELOTON_WORKOUTS,
   peloton_get_discipline_insights: MOCK_PELOTON_DISCIPLINE_INSIGHTS,
-  peloton_analyze_glucose_correlation: MOCK_PELOTON_CORRELATION,
   peloton_detect_hypoglycemia_risk: { riskLevel: 'moderate', lookbackHours: 48 },
   peloton_sync_workouts: { synced: 0, skipped: 0 },
 }
@@ -112,7 +124,8 @@ export function mcpPelotonHandlerWithFixture(toolName: string, fixture: unknown)
     if (body.method === 'initialize') return mcpInitResponse(body.id)
     if (body.id === undefined) return new HttpResponse(null, { status: 202 })
     const name = (body.params?.name as string | undefined) ?? ''
-    const result = name === toolName ? fixture : (TOOL_RESULTS[name] ?? {})
+    const args = (body.params?.arguments as Record<string, unknown> | undefined) ?? {}
+    const result = name === toolName ? fixture : resolvePelotonToolResult(name, args)
     return mcpToolResponse(body.id, result)
   })
 }
@@ -133,6 +146,7 @@ export const pelotonHandlers = [
 
     if (body.method === 'tools/call') {
       const toolName = (body.params?.name as string | undefined) ?? ''
+      const args = (body.params?.arguments as Record<string, unknown> | undefined) ?? {}
       if (toolName === 'peloton_sync_workouts') {
         return HttpResponse.json({
           jsonrpc: '2.0',
@@ -142,7 +156,7 @@ export const pelotonHandlers = [
           },
         })
       }
-      const result = TOOL_RESULTS[toolName] ?? {}
+      const result = resolvePelotonToolResult(toolName, args)
       return mcpToolResponse(body.id, result)
     }
 

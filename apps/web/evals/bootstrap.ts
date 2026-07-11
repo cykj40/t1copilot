@@ -2,6 +2,26 @@ import { geminiResearchHandlers } from '@/mocks/handlers/gemini-research'
 import { memoryHandlers } from '@/mocks/handlers/memory'
 import { server } from '@/mocks/node'
 
+const RealDate = globalThis.Date
+const EVAL_NOW = new RealDate('2026-06-13T12:00:00.000Z')
+
+// Eval fixtures cover Jun 6–13. Keep generated tool labels in that same window.
+class EvalDate extends RealDate {
+  constructor(...args: ConstructorParameters<typeof RealDate>) {
+    if (args.length === 0) {
+      super(EVAL_NOW.getTime())
+      return
+    }
+    super(...args)
+  }
+
+  static now() {
+    return EVAL_NOW.getTime()
+  }
+}
+
+globalThis.Date = EvalDate
+
 if (!process.env.ANTHROPIC_API_KEY) {
   throw new Error('ANTHROPIC_API_KEY is missing — add it to .env at the repo root.')
 }

@@ -190,7 +190,7 @@ export const agentTools = {
   }),
   render_prediction: tool({
     description:
-      'Predict glucose impact of insulin and/or carbs. Shows prediction artifact only — never recommend doses.',
+      'Predict glucose impact of insulin and/or carbs. MANDATORY for any request about predicted or expected glucose impact — including when baseline parameters may be unconfigured; this tool checks them itself and returns requiresSetup if they are still defaults. Shows prediction artifact only — never recommend doses.',
     inputSchema: z.object({
       action_type: z.enum(['insulin', 'carbs', 'both']),
       insulin_units: z.number().optional(),
@@ -230,7 +230,8 @@ export const agentTools = {
     },
   }),
   render_baseline_parameters: tool({
-    description: 'Show baseline ISF, ICR, basal dose, and timing in the right panel',
+    description:
+      'Show baseline ISF, ICR, basal dose, and timing in the right panel. Not for prediction requests — for glucose-impact questions call render_prediction instead, even if parameters may be unconfigured.',
     inputSchema: z.object({}),
     execute: async () => {
       try {
