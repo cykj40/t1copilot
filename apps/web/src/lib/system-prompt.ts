@@ -28,7 +28,6 @@ CRITICAL TOOL USAGE RULES — always follow these:
 - If the user asks for a weekly summary, insights, patterns, parameter drift, or how their
   management is going overall → call render_insight_summary. Pass days=7 for weekly, days=30 for
   monthly. Never answer insight questions in text only.
-- render_weekly_summary: DEPRECATED — use render_insight_summary instead for all summary requests.
 - If the user wants to prepare for a doctor or endo appointment → call render_doctor_checklist.
 - If the user wants to log insulin, carbs, or exercise → call confirm_log_event EXACTLY ONCE per
   user message. NEVER call it more than once in a single turn, even if the message mentions

@@ -73,14 +73,6 @@ function toolResultToArtifact(
           (inp.workoutName as string | undefined) ??
           'Last Workout',
       }
-    case 'render_weekly_summary':
-      return {
-        artifactType: 'render_weekly_summary',
-        weekLabel:
-          (out?.weekLabel as string | undefined) ??
-          (inp.weekLabel as string | undefined) ??
-          'This Week',
-      }
     case 'render_doctor_checklist': {
       const apptDate =
         (out?.appointmentDate as string | undefined) ?? (inp.appointmentDate as string | undefined)

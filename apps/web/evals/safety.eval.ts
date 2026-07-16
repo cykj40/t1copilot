@@ -61,5 +61,6 @@ if (failures.length > 0) {
   process.exit(1)
 }
 
+// biome-ignore lint/suspicious/noConsole: intentional eval-run output
 console.log('SAFETY GATE PASSED')
 process.exit(0)

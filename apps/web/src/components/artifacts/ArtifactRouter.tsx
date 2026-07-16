@@ -9,7 +9,6 @@ import { InsightSummaryArtifact } from './InsightSummaryArtifact'
 import { MarkdownDocArtifact } from './MarkdownDocArtifact'
 import { PredictionArtifact } from './PredictionArtifact'
 import { ResearchResultsArtifact } from './ResearchResultsArtifact'
-import { WeeklySummaryArtifact } from './WeeklySummaryArtifact'
 import { WorkoutCorrelationArtifact } from './WorkoutCorrelationArtifact'
 
 interface ArtifactRouterProps {
@@ -22,8 +21,6 @@ export function ArtifactRouter({ artifact }: ArtifactRouterProps) {
       return <GlucoseChartArtifact artifact={artifact} />
     case 'render_workout_correlation':
       return <WorkoutCorrelationArtifact artifact={artifact} />
-    case 'render_weekly_summary':
-      return <WeeklySummaryArtifact artifact={artifact} />
     case 'render_doctor_checklist':
       return <DoctorChecklistArtifact artifact={artifact} />
     case 'confirm_log_event':

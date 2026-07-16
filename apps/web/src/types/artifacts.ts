@@ -83,11 +83,6 @@ export interface RenderWorkoutCorrelationArtifact {
   correlation?: WorkoutCorrelation
 }
 
-export interface RenderWeeklySummaryArtifact {
-  artifactType: 'render_weekly_summary'
-  weekLabel: string
-}
-
 export interface RenderDoctorChecklistArtifact {
   artifactType: 'render_doctor_checklist'
   appointmentDate?: string
@@ -175,7 +170,6 @@ export type ArtifactData =
   | ParameterDisplayArtifact
   | RenderGlucoseChartArtifact
   | RenderWorkoutCorrelationArtifact
-  | RenderWeeklySummaryArtifact
   | RenderDoctorChecklistArtifact
   | ConfirmLogEventArtifact
   | RenderMarkdownDocArtifact
@@ -210,10 +204,6 @@ export type T1Tools = {
       workoutName: string
       correlation?: WorkoutCorrelation
     }
-  }
-  render_weekly_summary: {
-    input: { weekLabel: string }
-    output: { weekLabel: string }
   }
   render_doctor_checklist: {
     input: { appointmentDate?: string }

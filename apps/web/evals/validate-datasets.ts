@@ -48,6 +48,7 @@ assertToolNames('routing', collectToolNamesFromRouting(routing), agentToolNames)
 assertToolNames('behavior', collectToolNamesFromBehavior(behavior), agentToolNames)
 assertToolNames('safety', collectToolNamesFromSafety(safety), agentToolNames)
 
+// biome-ignore lint/suspicious/noConsole: intentional eval-run output
 console.log(
   `routing=${String(routing.length)} behavior=${String(behavior.length)} safety=${String(safety.length)} quality=${String(quality.length)}`,
 )

@@ -20,8 +20,6 @@ function getTitle(artifact: ArtifactData): string {
       return `Glucose · ${artifact.timeRange}`
     case 'render_workout_correlation':
       return artifact.workoutName
-    case 'render_weekly_summary':
-      return `Week · ${artifact.weekLabel}`
     case 'render_doctor_checklist':
       return 'Endo Prep Checklist'
     case 'confirm_log_event':
@@ -52,7 +50,6 @@ function hasPdfExport(artifact: ArtifactData): boolean {
   return (
     artifact.artifactType === 'render_glucose_chart' ||
     artifact.artifactType === 'render_insight_summary' ||
-    artifact.artifactType === 'render_weekly_summary' ||
     artifact.artifactType === 'render_doctor_checklist' ||
     artifact.artifactType === 'render_markdown_doc' ||
     artifact.artifactType === 'render_html_report'

@@ -4,23 +4,43 @@ import { server } from '@/mocks/node'
 
 const RealDate = globalThis.Date
 const EVAL_NOW = new RealDate('2026-06-13T12:00:00.000Z')
+type EvalDateArgs =
+  | []
+  | [value: number | string]
+  | [
+      year: number,
+      monthIndex: number,
+      date?: number,
+      hours?: number,
+      minutes?: number,
+      seconds?: number,
+      ms?: number,
+    ]
 
 // Eval fixtures cover Jun 6–13. Keep generated tool labels in that same window.
 class EvalDate extends RealDate {
-  constructor(...args: ConstructorParameters<typeof RealDate>) {
+  constructor(...args: EvalDateArgs) {
     if (args.length === 0) {
       super(EVAL_NOW.getTime())
       return
     }
+
+    if (args.length === 1) {
+      super(args[0])
+      return
+    }
+
     super(...args)
   }
 
-  static now() {
+  static override now() {
     return EVAL_NOW.getTime()
   }
 }
 
-globalThis.Date = EvalDate
+// Classes cannot model Date's callable Date(): string signature. Evals only
+// construct Date instances, so retain the constructor replacement at runtime.
+globalThis.Date = EvalDate as unknown as DateConstructor
 
 if (!process.env.ANTHROPIC_API_KEY) {
   throw new Error('ANTHROPIC_API_KEY is missing — add it to .env at the repo root.')

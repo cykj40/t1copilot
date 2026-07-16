@@ -131,13 +131,6 @@ export const agentTools = {
       }
     },
   }),
-  render_weekly_summary: tool({
-    description: 'Render a weekly glucose summary artifact in the right panel',
-    inputSchema: z.object({
-      weekLabel: z.string().describe('Week label, e.g. "May 12–18"'),
-    }),
-    execute: async ({ weekLabel }) => ({ weekLabel }),
-  }),
   render_doctor_checklist: tool({
     description: 'Render an endocrinologist appointment prep checklist in the right panel',
     inputSchema: z.object({

@@ -73,7 +73,10 @@ describe('bulk_correlate_workouts', () => {
   it('returns success: false when a workout cannot be correlated', async () => {
     server.use(mcpHandlerWithBadToolResponse({}))
 
-    const result = await agentTools.bulk_correlate_workouts.execute({ limit: 1 })
+    const result = await agentTools.bulk_correlate_workouts.execute?.(
+      { limit: 1 },
+      { toolCallId: 'test-bulk-correlate', messages: [] },
+    )
 
     expect(result).toMatchObject({
       success: false,

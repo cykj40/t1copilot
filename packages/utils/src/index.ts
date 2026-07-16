@@ -27,29 +27,3 @@ export function classifyGlucose(mgdl: number): GlucoseZone {
   if (mgdl <= 250) return 'hyperMild'
   return 'hyperCritical'
 }
-
-// ── Date / time ───────────────────────────────────────────────────────────────
-
-export function hoursAgo(hours: number): Date {
-  return new Date(Date.now() - hours * 60 * 60 * 1000)
-}
-
-export function formatTimestamp(iso: string): string {
-  return new Date(iso).toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  })
-}
-
-// ── Misc ──────────────────────────────────────────────────────────────────────
-
-export function assert(condition: boolean, message: string): asserts condition {
-  if (!condition) throw new Error(`Assertion failed: ${message}`)
-}
-
-export function exhaustive(value: never): never {
-  throw new Error(`Unhandled value: ${String(value)}`)
-}
