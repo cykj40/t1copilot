@@ -1,7 +1,7 @@
 'use client'
 
+import type { ResearchListItem } from '@t1copilot/types'
 import { useState } from 'react'
-import type { ResearchListItem } from '@/actions/research'
 import {
   ResearchResultsArtifact,
   toResearchArtifact,

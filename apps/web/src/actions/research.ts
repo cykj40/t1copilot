@@ -1,22 +1,10 @@
 'use server'
 
 import { getNeonDb, researchCache } from '@t1copilot/db/neon'
+import { type ResearchListItem, ResearchListItemSchema } from '@t1copilot/types'
 import { desc, eq } from 'drizzle-orm'
 import { unstable_noStore as noStore } from 'next/cache'
 import { z } from 'zod'
-
-export const ResearchListItemSchema = z.object({
-  id: z.string(),
-  query: z.string(),
-  status: z.enum(['pending', 'complete', 'error']),
-  sourceUrl: z.string().nullable(),
-  content: z.string().nullable(),
-  agentSummary: z.string().nullable(),
-  createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
-})
-
-export type ResearchListItem = z.infer<typeof ResearchListItemSchema>
 
 export async function getRecentResearch(limit = 10): Promise<ResearchListItem[]> {
   noStore()

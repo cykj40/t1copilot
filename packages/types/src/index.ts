@@ -110,3 +110,17 @@ export const AgentRecommendationSchema = z.object({
   approvedAt: z.string().datetime().nullable(),
 })
 export type AgentRecommendation = z.infer<typeof AgentRecommendationSchema>
+
+// ── Research ──────────────────────────────────────────────────────────────────
+
+export const ResearchListItemSchema = z.object({
+  id: z.string(),
+  query: z.string(),
+  status: z.enum(['pending', 'complete', 'error']),
+  sourceUrl: z.string().nullable(),
+  content: z.string().nullable(),
+  agentSummary: z.string().nullable(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+})
+export type ResearchListItem = z.infer<typeof ResearchListItemSchema>
