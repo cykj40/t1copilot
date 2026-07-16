@@ -14,12 +14,6 @@
     "lint": {
       "dependsOn": ["^lint"]
     },
-    "check": {
-      "cache": false
-    },
-    "format:check": {
-      "cache": false
-    },
     "typecheck": {
       "dependsOn": ["^build"]
     },

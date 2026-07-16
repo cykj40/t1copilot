@@ -381,11 +381,15 @@ export const agentTools = {
         }
 
         return {
-          success: true,
+          success: failed === 0,
           message:
-            `Correlation backfill complete. ` +
+            (failed === 0
+              ? `Correlation backfill complete. `
+              : `Correlation backfill completed with failures. `) +
             `Processed: ${processed}, Skipped (no CGM data): ${skipped}, Failed: ${failed}. ` +
-            `Discipline insights and hypoglycemia risk scan now have data.`,
+            (failed === 0
+              ? `Discipline insights and hypoglycemia risk scan now have data.`
+              : `Some correlation data may be unavailable.`),
         }
       } catch (err) {
         return {

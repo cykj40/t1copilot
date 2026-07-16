@@ -68,10 +68,6 @@ export const geminiResearchHandlers = [
   }),
 ]
 
-export function geminiHandlerWithPostResponse(body: Record<string, unknown>) {
-  return http.post(GEMINI_INTERACTIONS_URL, () => HttpResponse.json(body))
-}
-
 export function geminiHandlerWithPollResponse(body: Record<string, unknown>) {
   return http.get(`${GEMINI_INTERACTIONS_URL}/:id`, () => HttpResponse.json(body))
 }

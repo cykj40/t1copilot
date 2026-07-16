@@ -61,18 +61,6 @@ export const MOCK_CRITICAL_LOW_GLUCOSE = {
   trendDescription: 'Falling rapidly',
 }
 
-export const MOCK_HIGH_GLUCOSE = {
-  ...MOCK_LATEST_GLUCOSE,
-  value: 265,
-  trend: 'singleUp',
-  trendDescription: 'Rising',
-}
-
-export const MOCK_STALE_GLUCOSE = {
-  ...MOCK_LATEST_GLUCOSE,
-  ageMinutes: 22,
-}
-
 const MOCK_INSIGHT_STATS = {
   average: 138,
   standardDeviation: 20,

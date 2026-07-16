@@ -170,19 +170,6 @@ export const pelotonHandlers = [
 
 // ── Per-test override helpers ─────────────────────────────────────────────────
 
-export function mcpPelotonHandlerWithFixture(toolName: string, fixture: unknown) {
-  return http.post(PELOTON_MCP_ENDPOINT, async ({ request }) => {
-    const body = (await request.json()) as JsonRpcRequest
-    if (body.method === 'initialize') return mcpInitResponse(body.id)
-    if (body.id === undefined) return new HttpResponse(null, { status: 202 })
-    const name = (body.params?.name as string | undefined) ?? ''
-    const validationError = validateToolArguments(body.id, name, body.params?.arguments)
-    if (validationError) return validationError
-    const result = name === toolName ? fixture : (TOOL_RESULTS[name] ?? {})
-    return mcpToolResponse(body.id, result)
-  })
-}
-
 export function mcpPelotonHandlerWithError(rpcError: { code: number; message: string }) {
   return http.post(PELOTON_MCP_ENDPOINT, async ({ request }) => {
     const body = (await request.json()) as JsonRpcRequest

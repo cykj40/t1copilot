@@ -71,9 +71,6 @@ importers:
       react-markdown:
         specifier: ^10.1.0
         version: 10.1.0(@types/react@19.2.14)(react@19.2.5)
-      react-resizable-panels:
-        specifier: ^4.11.1
-        version: 4.11.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       recharts:
         specifier: ^3.8.1
         version: 3.8.1(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react-is@19.2.6)(react@19.2.5)(redux@5.0.1)
@@ -193,18 +190,12 @@ importers:
       '@paralleldrive/cuid2':
         specifier: ^2.2.2
         version: 2.3.1
-      '@t1copilot/types':
-        specifier: workspace:*
-        version: link:../types
       dotenv:
         specifier: ^16.0.0
         version: 16.6.1
       drizzle-orm:
         specifier: ^0.38.3
         version: 0.38.4(@libsql/client@0.14.0)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.1)(@types/pg@8.11.6)(@types/react@19.2.14)(react@19.2.5)
-      zod:
-        specifier: ^3.24.1
-        version: 3.25.76
     devDependencies:
       drizzle-kit:
         specifier: ^0.30.1
@@ -218,9 +209,6 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.10.2
         version: 1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76)
-      '@t1copilot/types':
-        specifier: workspace:*
-        version: link:../types
       zod:
         specifier: ^3.24.1
         version: 3.25.76
@@ -249,10 +237,6 @@ importers:
         version: 5.9.3
 
   packages/utils:
-    dependencies:
-      '@t1copilot/types':
-        specifier: workspace:*
-        version: link:../types
     devDependencies:
       typescript:
         specifier: ^5.7.3
@@ -3161,7 +3145,6 @@ packages:
 
   libsql@0.4.7:
     resolution: {integrity: sha512-T9eIRCs6b0J1SHKYIvD8+KCJMcWZ900iZyxdnSCdqxN12Z1ijzT+jY5nrk72Jw4B0HGzms2NgpryArlJqvc3Lw==}
-    cpu: [x64, arm64, wasm32]
     os: [darwin, linux, win32]
 
   lightningcss-android-arm64@1.32.0:
@@ -3801,12 +3784,6 @@ packages:
         optional: true
       redux:
         optional: true
-
-  react-resizable-panels@4.11.1:
-    resolution: {integrity: sha512-kA4w58V6wYdRLm2rg9pzroZwGlqBLul1FjMP0J8kqTo3zSHtjeH+LXmZaldCo6+HWqs1e5hOcPoajKXdOze37Q==}
-    peerDependencies:
-      react: ^18.0.0 || ^19.0.0
-      react-dom: ^18.0.0 || ^19.0.0
 
   react@19.2.5:
     resolution: {integrity: sha512-llUJLzz1zTUBrskt2pwZgLq59AemifIftw4aB7JxOqf1HY2FDaGDxgwpAPVzHU1kdWabH7FauP4i1oEeer2WCA==}
@@ -7814,11 +7791,6 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.14
       redux: 5.0.1
-
-  react-resizable-panels@4.11.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5):
-    dependencies:
-      react: 19.2.5
-      react-dom: 19.2.5(react@19.2.5)
 
   react@19.2.5: {}
 

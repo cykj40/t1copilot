@@ -21,9 +21,6 @@
     "build": "tsc",
     "lint": "biome check src",
     "typecheck": "tsc --noEmit",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio",
     "db:generate:neon": "pnpm build && drizzle-kit generate --config=drizzle.neon.config.ts",
     "db:generate:turso": "drizzle-kit generate --config=drizzle.turso.config.ts",
     "db:migrate:neon": "drizzle-kit migrate --config=drizzle.neon.config.ts",
@@ -36,9 +33,7 @@
     "dotenv": "^16.0.0",
     "@neondatabase/serverless": "^0.10.4",
     "@paralleldrive/cuid2": "^2.2.2",
-    "@t1copilot/types": "workspace:*",
-    "drizzle-orm": "^0.38.3",
-    "zod": "^3.24.1"
+    "drizzle-orm": "^0.38.3"
   },
   "devDependencies": {
     "drizzle-kit": "^0.30.1",

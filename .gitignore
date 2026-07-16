@@ -9,7 +9,9 @@ dist
 out
 build
 packages/db/drizzle.*.config.js
+packages/db/drizzle.*.config.js.map
 packages/db/drizzle.*.config.d.ts
+packages/db/drizzle.*.config.d.ts.map
 
 # turbo
 .turbo

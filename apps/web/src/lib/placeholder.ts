@@ -20,9 +20,3 @@ export const PLACEHOLDER_RECENT_EVENTS = [
     minutesAgo: 60,
   },
 ]
-
-export const PLACEHOLDER_BASELINE = {
-  isf: 40,
-  icr: 10,
-  basalUnitsPerDay: 18,
-}

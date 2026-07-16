@@ -4,8 +4,6 @@ export const GEMINI_INTERACTIONS_URL =
   'https://generativelanguage.googleapis.com/v1beta/interactions'
 
 export const MOCK_INTERACTION_ID = 'v1_abc123'
-export const MOCK_CACHE_ID = 'cache-row-1'
-
 export const MOCK_START_RESPONSE = {
   id: MOCK_INTERACTION_ID,
   status: 'created',

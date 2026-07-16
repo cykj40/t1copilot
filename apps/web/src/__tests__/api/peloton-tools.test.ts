@@ -1,7 +1,9 @@
 import { callPelotonTool, extractJson, extractText, PelotonMcpError } from '@t1copilot/mcp-clients'
 import { HttpResponse, http } from 'msw'
 import { describe, expect, it } from 'vitest'
+import { agentTools } from '@/lib/agent-core'
 import { getGlucoseRange } from '@/lib/dexcom-mcp'
+import { mcpHandlerWithBadToolResponse } from '@/mocks/handlers/dexcom'
 import {
   MOCK_PELOTON_RAW_WORKOUTS,
   MOCK_PELOTON_SYNC_TEXT,
@@ -66,5 +68,17 @@ describe('bulk_correlate_workouts', () => {
         glucose_readings: [{ timestamp: '2026-05-23T12:00:00.000Z', value: 142, trend: 'flat' }],
       }),
     ).rejects.toBeInstanceOf(PelotonMcpError)
+  })
+
+  it('returns success: false when a workout cannot be correlated', async () => {
+    server.use(mcpHandlerWithBadToolResponse({}))
+
+    const result = await agentTools.bulk_correlate_workouts.execute({ limit: 1 })
+
+    expect(result).toMatchObject({
+      success: false,
+      message:
+        'Correlation backfill completed with failures. Processed: 0, Skipped (no CGM data): 0, Failed: 1. Some correlation data may be unavailable.',
+    })
   })
 })
