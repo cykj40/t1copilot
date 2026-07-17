@@ -54,6 +54,7 @@ export interface GlucoseChartReading {
   value: number
   trend: string
   timestamp: string
+  localTimestamp?: string
 }
 
 export interface GlucoseChartStatistics {
@@ -121,7 +122,11 @@ export interface RenderPredictionArtifact {
 
 export interface RenderBaselineParametersArtifact {
   artifactType: 'render_baseline_parameters'
-  parameters: BaselineParametersResponse
+  parameters: BaselineParametersResponse & {
+    baselineParameters: BaselineParametersResponse['baselineParameters'] & {
+      localUpdatedAt?: string
+    }
+  }
 }
 
 export interface RenderBaselineSetupArtifact {
@@ -137,6 +142,12 @@ export interface RenderInsightSummaryArtifact {
   hypoRisk?: string
   weekLabel: string
   eventTimeline?: {
+    period?: {
+      start: string
+      end: string
+      localStartTime?: string
+      localEndTime?: string
+    }
     summary?: {
       totalEvents: number
       totalInsulin: number
@@ -145,6 +156,7 @@ export interface RenderInsightSummaryArtifact {
     }
     timeline: Array<{
       timestamp: string
+      localTimestamp?: string
       type: 'insulin' | 'carbs' | 'exercise'
       data: Record<string, unknown>
       glucoseContext: { value: number; trend: string } | null
@@ -258,14 +270,24 @@ export type T1Tools = {
   render_baseline_parameters: {
     input: Record<string, never>
     output: {
-      parameters: BaselineParametersResponse
+      parameters: BaselineParametersResponse & {
+        baselineParameters: BaselineParametersResponse['baselineParameters'] & {
+          localUpdatedAt?: string
+        }
+      }
       error?: string
     }
   }
   render_glucose_stats: {
     input: { hours?: number }
     output: {
-      timeRange: { start: string; end: string; hours: number }
+      timeRange: {
+        start: string
+        end: string
+        hours: number
+        localStartTime?: string
+        localEndTime?: string
+      }
       statistics: {
         average: number
         standardDeviation: number
@@ -294,6 +316,7 @@ export type T1Tools = {
         value: number
         timestamp: string
         startingGlucose: number
+        localTimestamp?: string
       }
       prediction: {
         predictedGlucose: number
@@ -310,6 +333,7 @@ export type T1Tools = {
         hypothesis: string
         timestamp: string
         id: number
+        localTimestamp?: string
       }
       disclaimer: string
       error?: string
@@ -340,6 +364,10 @@ export type T1Tools = {
       status?: 'pending'
       error?: string
     }
+  }
+  view_artifact_panel: {
+    input: Record<string, never>
+    output: { image: string } | { error: string }
   }
 }
 

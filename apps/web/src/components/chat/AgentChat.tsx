@@ -1,8 +1,22 @@
 'use client'
 
 import { useChat } from '@ai-sdk/react'
-import { DefaultChatTransport, getToolName, isToolUIPart } from 'ai'
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
+import {
+  DefaultChatTransport,
+  getToolName,
+  isToolUIPart,
+  lastAssistantMessageIsCompleteWithToolCalls,
+} from 'ai'
+import { toPng } from 'html-to-image'
+import {
+  forwardRef,
+  type RefObject,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { MedicalDisclaimer } from '@/components/shared/MedicalDisclaimer'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { loadPersistedMessages, persistMessages } from '@/hooks/useMessagePersistence'
@@ -25,6 +39,31 @@ const SUGGESTED_PROMPTS = [
   'Log 3 units rapid insulin',
 ]
 
+/** Vision tokens scale with image size — cap the long edge before encoding. */
+const ARTIFACT_SCREENSHOT_MAX_DIMENSION = 1024
+
+async function captureArtifactPanelImage(node: HTMLElement): Promise<string> {
+  const dataUrl = await toPng(node, { cacheBust: true, pixelRatio: 1 })
+  const img = new Image()
+  img.src = dataUrl
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve()
+    img.onerror = () => reject(new Error('Failed to decode captured artifact panel image'))
+  })
+
+  const scale = Math.min(1, ARTIFACT_SCREENSHOT_MAX_DIMENSION / Math.max(img.width, img.height))
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.max(1, Math.round(img.width * scale))
+  canvas.height = Math.max(1, Math.round(img.height * scale))
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Canvas 2D context unavailable')
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+
+  const base64 = canvas.toDataURL('image/png').split(',')[1]
+  if (!base64) throw new Error('Failed to encode captured artifact panel image')
+  return base64
+}
+
 export interface AgentChatHandle {
   sendMessage: (text: string) => void
 }
@@ -35,6 +74,8 @@ interface AgentChatProps {
   conversationId: string | null
   onFirstMessage: (text: string) => string
   onMessagesChange: (id: string, count: number) => void
+  /** Node wrapping the rendered artifact panel content — captured for view_artifact_panel. */
+  artifactPanelRef: RefObject<HTMLDivElement | null>
 }
 
 function toolResultToArtifact(
@@ -200,7 +241,14 @@ function toolResultToArtifact(
 }
 
 export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function AgentChat(
-  { onArtifact, onClearArtifact, conversationId, onFirstMessage, onMessagesChange },
+  {
+    onArtifact,
+    onClearArtifact,
+    conversationId,
+    onFirstMessage,
+    onMessagesChange,
+    artifactPanelRef,
+  },
   ref,
 ) {
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -225,9 +273,41 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
     messages,
     sendMessage: chatSendMessage,
     status,
+    addToolOutput,
   } = useChat<T1UIMessage>({
     transport,
     messages: initialMessages,
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+    async onToolCall({ toolCall }) {
+      if (toolCall.toolName !== 'view_artifact_panel') return
+
+      const node = artifactPanelRef.current
+      if (!node) {
+        addToolOutput({
+          tool: 'view_artifact_panel',
+          toolCallId: toolCall.toolCallId,
+          output: { error: 'No artifact is currently rendered in the panel.' },
+        })
+        return
+      }
+
+      try {
+        const image = await captureArtifactPanelImage(node)
+        addToolOutput({
+          tool: 'view_artifact_panel',
+          toolCallId: toolCall.toolCallId,
+          output: { image },
+        })
+      } catch (err) {
+        addToolOutput({
+          tool: 'view_artifact_panel',
+          toolCallId: toolCall.toolCallId,
+          output: {
+            error: err instanceof Error ? err.message : 'Failed to capture artifact panel.',
+          },
+        })
+      }
+    },
   })
 
   const isLoading = status === 'streaming' || status === 'submitted'

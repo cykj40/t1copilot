@@ -14,9 +14,11 @@ import {
   predictGlucoseImpact,
 } from '@t1copilot/mcp-clients'
 import type { WorkoutCorrelation } from '@t1copilot/types'
+import { formatLocalTimestamp } from '@t1copilot/utils'
 import { tool } from 'ai'
 import { z } from 'zod'
 import { type EventTimeline, getEventTimeline } from '@/actions/dexcom'
+import { env } from '@/config/env'
 import { isDefaultParameters } from '@/lib/baseline-defaults'
 import { getGlucoseRange, getLatestGlucose } from '@/lib/dexcom-mcp'
 import { saveInsight } from '@/lib/insight-store'
@@ -37,10 +39,15 @@ const BulkCorrelateInputSchema = z.object({
   limit: z.number().int().min(1).max(50).optional().default(20),
 })
 
+export const ViewArtifactPanelOutputSchema = z.union([
+  z.object({ image: z.string() }),
+  z.object({ error: z.string() }),
+])
+
 function getTemporalContext(): string {
   const now = new Date()
   const localDateTime = now.toLocaleString('en-US', {
-    timeZone: 'America/New_York',
+    timeZone: env.USER_TIMEZONE,
     weekday: 'long',
     month: 'long',
     day: 'numeric',
@@ -52,6 +59,102 @@ function getTemporalContext(): string {
   })
 
   return `\n\nCurrent date/time context: Today is ${localDateTime}. Interpret bare times like "at 10:00 AM" as occurring today unless the user explicitly says another date. Interpret "today" using this date. Never infer dates from examples.`
+}
+
+function localTime(timestamp: string): string {
+  return formatLocalTimestamp(timestamp, env.USER_TIMEZONE)
+}
+
+type LocalizedEventTimeline = Omit<EventTimeline, 'period' | 'timeline'> & {
+  period?: { start: string; end: string; localStartTime: string; localEndTime: string }
+  timeline: Array<EventTimeline['timeline'][number] & { localTimestamp: string }>
+}
+
+function localizeEventTimeline(timeline: EventTimeline): LocalizedEventTimeline {
+  const { period, timeline: events, ...rest } = timeline
+  return {
+    ...rest,
+    ...(period === undefined
+      ? {}
+      : {
+          period: {
+            ...period,
+            localStartTime: localTime(period.start),
+            localEndTime: localTime(period.end),
+          },
+        }),
+    timeline: events.map((event) => ({
+      ...event,
+      localTimestamp: localTime(event.timestamp),
+    })),
+  }
+}
+
+function localizeAnalyzeTrends(result: Awaited<ReturnType<typeof analyzeTrends>>) {
+  return {
+    ...result,
+    period: {
+      ...result.period,
+      localStartTime: localTime(result.period.start),
+      localEndTime: localTime(result.period.end),
+    },
+    postMealPatterns: {
+      ...result.postMealPatterns,
+      recentMeals: result.postMealPatterns.recentMeals.map((meal) => ({
+        ...meal,
+        localTimestamp: localTime(meal.timestamp),
+        ...(meal.carbData === undefined
+          ? {}
+          : {
+              carbData: {
+                ...meal.carbData,
+                localTimestamp: localTime(meal.carbData.timestamp),
+                localCreatedAt: localTime(meal.carbData.createdAt),
+              },
+            }),
+      })),
+    },
+    exerciseImpact: {
+      ...result.exerciseImpact,
+      recentSessions: result.exerciseImpact.recentSessions.map((session) => ({
+        ...session,
+        localTimestamp: localTime(session.timestamp),
+        ...(session.exerciseData === undefined
+          ? {}
+          : {
+              exerciseData: {
+                ...session.exerciseData,
+                localTimestamp: localTime(session.exerciseData.timestamp),
+                localCreatedAt: localTime(session.exerciseData.createdAt),
+              },
+            }),
+      })),
+    },
+  }
+}
+
+function localizeDrift(result: Awaited<ReturnType<typeof detectParameterDrift>>) {
+  return {
+    ...result,
+    recentObservations: result.recentObservations.map((observation) => ({
+      ...observation,
+      localTimestamp: localTime(observation.timestamp),
+    })),
+  }
+}
+
+function localizeAdaptiveInsights(result: Awaited<ReturnType<typeof getAdaptiveInsights>>) {
+  return {
+    ...result,
+    baselineParameters: {
+      ...result.baselineParameters,
+      localUpdatedAt: localTime(result.baselineParameters.updatedAt),
+    },
+    recentObservations: result.recentObservations.map((observation) => ({
+      ...observation,
+      localTimestamp: localTime(observation.timestamp),
+    })),
+  }
 }
 
 /**
@@ -82,8 +185,11 @@ export const agentTools = {
         const range = await getGlucoseRange(start, now.toISOString())
         return {
           timeRange,
-          title,
-          readings: range.readings,
+          title: timeRange === '24h' ? 'Glucose Trend — Last 24 Hours' : title,
+          readings: range.readings.map((reading) => ({
+            ...reading,
+            localTimestamp: localTime(reading.timestamp),
+          })),
           statistics: range.statistics,
         }
       } catch (error) {
@@ -229,7 +335,15 @@ export const agentTools = {
     execute: async () => {
       try {
         const parameters = await getBaselineParameters()
-        return { parameters }
+        return {
+          parameters: {
+            ...parameters,
+            baselineParameters: {
+              ...parameters.baselineParameters,
+              localUpdatedAt: localTime(parameters.baselineParameters.updatedAt),
+            },
+          },
+        }
       } catch (error) {
         console.error('[render_baseline_parameters] MCP call failed:', error)
         return {
@@ -248,7 +362,14 @@ export const agentTools = {
         const result = await getGlucoseStatistics(
           args.hours !== undefined ? { hours: args.hours } : undefined,
         )
-        return result
+        return {
+          ...result,
+          timeRange: {
+            ...result.timeRange,
+            localStartTime: localTime(result.timeRange.start),
+            localEndTime: localTime(result.timeRange.end),
+          },
+        }
       } catch (error) {
         console.error('[render_glucose_stats] MCP call failed:', error)
         return {
@@ -275,7 +396,15 @@ export const agentTools = {
           current_glucose: args.current_glucose,
         }
         if (args.window_hours !== undefined) compareArgs.window_hours = args.window_hours
-        return await compareExpectedVsActual(compareArgs)
+        const result = await compareExpectedVsActual(compareArgs)
+        return {
+          ...result,
+          event: { ...result.event, localTimestamp: localTime(result.event.timestamp) },
+          observation: {
+            ...result.observation,
+            localTimestamp: localTime(result.observation.timestamp),
+          },
+        }
       } catch (error) {
         console.error('[compare_prediction_vs_actual] MCP call failed:', error)
         return {
@@ -297,7 +426,7 @@ export const agentTools = {
         const now = new Date()
         const start = new Date(now.getTime() - (days ?? 7) * 24 * 60 * 60 * 1000)
         const timeline = await getEventTimeline(start.toISOString(), now.toISOString())
-        return timeline ?? { timeline: [] }
+        return timeline === null ? { timeline: [] } : localizeEventTimeline(timeline)
       } catch (error) {
         console.error('[get_event_timeline] MCP call failed:', error)
         return {
@@ -411,7 +540,10 @@ export const agentTools = {
       // Sequential — parallel MCP connections race and cross-wire responses on the Dexcom server.
       let trendsResult: PromiseSettledResult<Awaited<ReturnType<typeof analyzeTrends>>>
       try {
-        trendsResult = { status: 'fulfilled', value: await analyzeTrends({ days: days ?? 7 }) }
+        trendsResult = {
+          status: 'fulfilled',
+          value: localizeAnalyzeTrends(await analyzeTrends({ days: days ?? 7 })),
+        }
       } catch (reason) {
         console.error('[render_insight_summary] analyze_trends failed:', reason)
         trendsResult = { status: 'rejected', reason }
@@ -421,7 +553,7 @@ export const agentTools = {
       try {
         driftResult = {
           status: 'fulfilled',
-          value: await detectParameterDrift({ days: (days ?? 7) * 2 }),
+          value: localizeDrift(await detectParameterDrift({ days: (days ?? 7) * 2 })),
         }
       } catch (reason) {
         console.error('[render_insight_summary] detect_parameter_drift failed:', reason)
@@ -432,7 +564,7 @@ export const agentTools = {
       try {
         adaptiveResult = {
           status: 'fulfilled',
-          value: await getAdaptiveInsights({ days: (days ?? 7) * 2 }),
+          value: localizeAdaptiveInsights(await getAdaptiveInsights({ days: (days ?? 7) * 2 })),
         }
       } catch (reason) {
         console.error('[render_insight_summary] get_adaptive_insights failed:', reason)
@@ -460,11 +592,12 @@ export const agentTools = {
         }
       }
 
-      let eventTimeline: EventTimeline | null = null
+      let eventTimeline: LocalizedEventTimeline | null = null
       try {
         const now = new Date()
         const start = new Date(now.getTime() - (days ?? 7) * 24 * 60 * 60 * 1000)
-        eventTimeline = await getEventTimeline(start.toISOString(), now.toISOString())
+        const timeline = await getEventTimeline(start.toISOString(), now.toISOString())
+        eventTimeline = timeline === null ? null : localizeEventTimeline(timeline)
       } catch (err) {
         console.error('[render_insight_summary] get_event_timeline failed:', err)
       }
@@ -516,5 +649,25 @@ export const agentTools = {
       "Use for current evidence and research — not for the user's own logged Dexcom/Peloton data.",
     inputSchema: StartResearchInputSchema,
     execute: async ({ query }) => executeStartResearch(query),
+  }),
+  view_artifact_panel: tool({
+    description:
+      'See a screenshot of what is currently rendered in the artifact panel, to verify a chart ' +
+      'or other visual artifact actually rendered as intended — correct layout, legible labels, ' +
+      'no overlapping elements. This returns an image, not data; use the tool results already in ' +
+      'context to read values. Call it selectively, e.g. after rendering a new or unusual chart ' +
+      'layout, or when the user says something looks wrong — not routinely after every artifact. ' +
+      'Runs client-side in the browser; has no effect outside an interactive session.',
+    inputSchema: z.object({}),
+    // No `execute` — resolved client-side in the browser via onToolCall/addToolOutput
+    // (see AgentChat.tsx). `outputSchema` (rather than `execute`) is what pins OUTPUT here.
+    outputSchema: ViewArtifactPanelOutputSchema,
+    toModelOutput: ({ output }) =>
+      'image' in output
+        ? {
+            type: 'content',
+            value: [{ type: 'file-data', mediaType: 'image/png', data: output.image }],
+          }
+        : { type: 'content', value: [{ type: 'text', text: output.error }] },
   }),
 }

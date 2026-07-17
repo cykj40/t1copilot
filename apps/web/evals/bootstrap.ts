@@ -58,6 +58,7 @@ process.env.DATABASE_URL ??= 'postgresql://test:test@localhost:5432/test'
 process.env.DEXCOM_MCP_AUTH_TOKEN ??= 'test-token'
 process.env.PELOTON_MCP_AUTH_TOKEN ??= 'test-token'
 process.env.GEMINI_API_KEY ??= 'test-gemini-key'
+process.env.USER_TIMEZONE ??= 'America/New_York'
 
 // bypass, not error: api.anthropic.com and api.braintrust.dev are real calls.
 // MCP + Gemini + memory traffic is intercepted by the handlers.

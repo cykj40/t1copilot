@@ -27,3 +27,25 @@ export function classifyGlucose(mgdl: number): GlucoseZone {
   if (mgdl <= 250) return 'hyperMild'
   return 'hyperCritical'
 }
+
+/**
+ * Formats an absolute ISO timestamp for a user-facing model response without
+ * requiring the model to perform UTC offset or DST arithmetic itself.
+ */
+export function formatLocalTimestamp(timestamp: string, timeZone: string): string {
+  const date = new Date(timestamp)
+  const dateParts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    month: 'long',
+    day: 'numeric',
+  }).format(date)
+  const timeParts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZoneName: 'short',
+  }).format(date)
+
+  return `${dateParts}, ${timeParts}`
+}

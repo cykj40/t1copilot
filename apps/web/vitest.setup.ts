@@ -9,6 +9,7 @@ process.env.DATABASE_URL ??= 'postgresql://test:test@localhost:5432/test'
 process.env.DEXCOM_MCP_AUTH_TOKEN ??= 'test-token'
 process.env.PELOTON_MCP_AUTH_TOKEN ??= 'test-token'
 process.env.GEMINI_API_KEY ??= 'test-gemini-key'
+process.env.USER_TIMEZONE ??= 'America/New_York'
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())

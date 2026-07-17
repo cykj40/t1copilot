@@ -1,7 +1,7 @@
 'use client'
 
 import { Check, Code, Copy, Download, Eye, X } from 'lucide-react'
-import { useState } from 'react'
+import { type RefObject, useState } from 'react'
 import { ArtifactRouter } from '@/components/artifacts/ArtifactRouter'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -12,6 +12,8 @@ type PanelTab = 'preview' | 'source'
 interface ArtifactPanelProps {
   artifact: ArtifactData
   onClose: () => void
+  /** Wraps the rendered artifact content — read by view_artifact_panel to capture a screenshot. */
+  contentRef?: RefObject<HTMLDivElement | null>
 }
 
 function getTitle(artifact: ArtifactData): string {
@@ -56,7 +58,7 @@ function hasPdfExport(artifact: ArtifactData): boolean {
   )
 }
 
-export function ArtifactPanel({ artifact, onClose }: ArtifactPanelProps) {
+export function ArtifactPanel({ artifact, onClose, contentRef }: ArtifactPanelProps) {
   const [tab, setTab] = useState<PanelTab>('preview')
   const [copied, setCopied] = useState(false)
 
@@ -162,7 +164,7 @@ export function ArtifactPanel({ artifact, onClose }: ArtifactPanelProps) {
       </div>
 
       <ScrollArea className="flex-1">
-        <div id="artifact-print-region" className="p-3">
+        <div id="artifact-print-region" ref={contentRef} className="p-3">
           {tab === 'preview' ? (
             <ArtifactRouter artifact={artifact} />
           ) : (

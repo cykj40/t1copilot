@@ -45,6 +45,7 @@ export function ThreePanelLayout({ children }: ThreePanelLayoutProps) {
   const splitRef = useRef<HTMLDivElement>(null)
   const columnRef = useRef<HTMLDivElement>(null)
   const agentChatRef = useRef<AgentChatHandle>(null)
+  const artifactPanelRef = useRef<HTMLDivElement>(null)
   const { conversations, createConversation, updateConversation, deleteConversation } =
     useConversations()
 
@@ -137,6 +138,7 @@ export function ThreePanelLayout({ children }: ThreePanelLayoutProps) {
     onArtifact: setArtifact,
     onClearArtifact: () => setArtifact(null),
     conversationId: activeConversationId,
+    artifactPanelRef,
     onFirstMessage: (text: string) => {
       const id = createConversation(text)
       setActiveConversationId(id)
@@ -222,7 +224,11 @@ export function ThreePanelLayout({ children }: ThreePanelLayoutProps) {
                 className="flex h-full min-w-[280px] shrink-0 flex-col overflow-hidden border-l border-border bg-background transition-[width] duration-200 ease-out"
                 style={{ width: `${artifactWidthPct}%` }}
               >
-                <ArtifactPanel artifact={artifact} onClose={handleCloseArtifact} />
+                <ArtifactPanel
+                  artifact={artifact}
+                  onClose={handleCloseArtifact}
+                  contentRef={artifactPanelRef}
+                />
               </aside>
             </>
           )}

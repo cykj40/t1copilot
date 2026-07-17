@@ -1,5 +1,14 @@
 import { z } from 'zod'
 
+function isIanaTimeZone(value: string): boolean {
+  try {
+    new Intl.DateTimeFormat(undefined, { timeZone: value })
+    return true
+  } catch (error) {
+    return !(error instanceof RangeError)
+  }
+}
+
 const envSchema = z.object({
   ANTHROPIC_API_KEY: z.string().min(1),
   OPENAI_API_KEY: z.string().min(1),
@@ -9,6 +18,9 @@ const envSchema = z.object({
   PELOTON_MCP_AUTH_TOKEN: z.string().min(1).optional(),
   DATABASE_URL: z.string().url().optional(),
   SYSTEM_USER_ID: z.string().min(1).optional(),
+  USER_TIMEZONE: z.string().min(1).refine(isIanaTimeZone, {
+    message: 'USER_TIMEZONE must be a valid IANA timezone, e.g. America/New_York',
+  }),
 })
 
 // Throws at startup if required env vars are missing

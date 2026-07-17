@@ -195,19 +195,17 @@ describe('getGlucoseRange', () => {
 // ── getDailySummary ──────────────────────────────────────────────────────────
 
 describe('getDailySummary', () => {
-  it('temporarily returns a latest glucose reading shape', async () => {
+  it('returns the daily summary shape', async () => {
     const result = await getDailySummary()
 
-    expect(result.value).toBe(142)
-    expect(result.unit).toBe('mg/dL')
-    expect(result.trend).toBe('flat')
-    expect(result.ageMinutes).toBe(4)
-    expect(result.source).toBe('share')
+    expect(result.date).toBe('2026-05-23')
+    expect(result.statistics.average).toBe(138)
+    expect(result.readingCount).toBe(3)
   })
 
-  it('accepts an explicit date string while using latest glucose', async () => {
+  it('passes an explicit date string through to the MCP tool', async () => {
     const result = await getDailySummary('2026-05-23')
-    expect(result.value).toBe(142)
+    expect(result.date).toBe('2026-05-23')
   })
 
   it('throws when the server is unreachable', async () => {
@@ -219,7 +217,7 @@ describe('getDailySummary', () => {
     await expect(getDailySummary()).rejects.toThrow()
   })
 
-  it('throws when latest glucose fields are missing from response', async () => {
+  it('throws when daily summary fields are missing from response', async () => {
     server.use(mcpHandlerWithBadToolResponse({ value: 142 }))
 
     await expect(getDailySummary()).rejects.toThrow()

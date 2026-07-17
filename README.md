@@ -27,7 +27,7 @@ Self-hosted. Bring your own data. Own everything.
 The request path uses the Vercel AI SDK's `streamText`/`generateText` APIs and `tool()` calls;
 there is no agent graph in production. LangGraph was built for P3 and evaluated as the agent
 runtime, then deliberately replaced by the AI SDK route for ship speed. The original implementation
-is preserved at git tag `<TAG_NAME>`.
+is preserved at git tag `langgraph-reference`.
 
 ## Self-hosting
 (setup instructions coming)

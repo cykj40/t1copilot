@@ -44,8 +44,11 @@ export const MOCK_GLUCOSE_RANGE = {
   ],
 }
 
-// get_daily_summary currently returns the same shape as get_latest_glucose.
-export const MOCK_DAILY_SUMMARY = MOCK_LATEST_GLUCOSE
+export const MOCK_DAILY_SUMMARY = {
+  date: '2026-05-23',
+  statistics: MOCK_STATISTICS,
+  readingCount: 3,
+}
 
 export const MOCK_LOW_GLUCOSE = {
   ...MOCK_LATEST_GLUCOSE,

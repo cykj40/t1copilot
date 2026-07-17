@@ -42,7 +42,11 @@ export const GlucoseRangeSchema = z.object({
 })
 
 // get_daily_summary currently returns the same shape as get_latest_glucose.
-export const DailySummarySchema = LatestGlucoseSchema
+export const DailySummarySchema = z.object({
+  date: z.string(),
+  statistics: DexcomStatisticsSchema,
+  readingCount: z.number(),
+})
 
 export type LatestGlucose = z.infer<typeof LatestGlucoseSchema>
 export type DexcomReading = z.infer<typeof DexcomReadingSchema>
@@ -89,7 +93,6 @@ export const getGlucoseRange = cache(async (start: string, end: string): Promise
 
 export const getDailySummary = cache(async (date?: string): Promise<DailySummary> => {
   noStore()
-  void date
-  const raw = await callDexcomTool('get_latest_glucose')
+  const raw = await callDexcomTool('get_daily_summary', date === undefined ? {} : { date })
   return DailySummarySchema.parse(raw)
 })
