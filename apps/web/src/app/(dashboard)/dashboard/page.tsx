@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { GlucoseCard } from '@/components/glucose/GlucoseCard'
+import { TimeInRangeCard } from '@/components/glucose/TimeInRangeCard'
 import { InsightFeed } from '@/components/insights/InsightFeed'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { getLatestGlucose, mapDexcomTrend } from '@/lib/dexcom-mcp'
@@ -37,19 +38,7 @@ export default async function DashboardPage() {
         {...(latestResult[0]?.status === 'rejected' ? { error: 'CGM offline' } : {})}
       />
 
-      {/* Time in range */}
-      <Card className="bg-card border-border">
-        <CardContent className="pt-4 pb-3 px-4">
-          <p className="text-xs text-muted-foreground mb-1">Time in Range</p>
-          <div className="flex items-baseline gap-1">
-            <span className="text-3xl font-bold text-[#22c55e] tabular-nums">—</span>
-          </div>
-          <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
-            <div className="h-full rounded-full bg-[#22c55e]" style={{ width: '0%' }} />
-          </div>
-          <p className="mt-1.5 text-[11px] text-muted-foreground">Today</p>
-        </CardContent>
-      </Card>
+      <TimeInRangeCard />
 
       {/* Recent events */}
       <Card className="bg-card border-border">
