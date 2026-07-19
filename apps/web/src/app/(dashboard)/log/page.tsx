@@ -13,11 +13,11 @@ function describeEvent(type: string, data: Record<string, unknown>): string {
     return `${String(data.units ?? '')}u ${String(data.type ?? 'rapid')} insulin`
   }
   if (type === 'carbs') {
-    const food = data.food_description ? ` — ${String(data.food_description)}` : ''
+    const food = data.foodDescription ? ` — ${String(data.foodDescription)}` : ''
     return `${String(data.grams ?? '')}g carbs${food}`
   }
   if (type === 'exercise') {
-    return `${String(data.duration_minutes ?? '')}min ${String(data.activity_type ?? 'exercise')}`
+    return `${String(data.durationMinutes ?? '')}min ${String(data.activityType ?? 'exercise')}`
   }
   return type
 }
