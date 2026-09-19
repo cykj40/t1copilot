@@ -1,5 +1,6 @@
+import 'server-only'
+
 import { callDexcomTool, callDexcomToolWithRetry } from '@t1copilot/mcp-clients'
-import type { TrendArrow } from '@t1copilot/types'
 import { unstable_noStore as noStore } from 'next/cache'
 import { cache } from 'react'
 import { z } from 'zod'
@@ -53,24 +54,6 @@ export type DexcomReading = z.infer<typeof DexcomReadingSchema>
 export type GlucoseRange = z.infer<typeof GlucoseRangeSchema>
 export type DailySummary = z.infer<typeof DailySummarySchema>
 export type DexcomStatistics = z.infer<typeof DexcomStatisticsSchema>
-
-// ── Trend mapping: Dexcom camelCase → app TrendArrow enum ────────────────────
-const DEXCOM_TREND_MAP: Record<string, TrendArrow> = {
-  none: 'NONE',
-  doubleUp: 'DOUBLE_UP',
-  singleUp: 'SINGLE_UP',
-  fortyFiveUp: 'FORTY_FIVE_UP',
-  flat: 'FLAT',
-  fortyFiveDown: 'FORTY_FIVE_DOWN',
-  singleDown: 'SINGLE_DOWN',
-  doubleDown: 'DOUBLE_DOWN',
-  notComputable: 'NOT_COMPUTABLE',
-  rateOutOfRange: 'RATE_OUT_OF_RANGE',
-}
-
-export function mapDexcomTrend(dexcomTrend: string): TrendArrow {
-  return DEXCOM_TREND_MAP[dexcomTrend] ?? 'NONE'
-}
 
 // ── Typed MCP call wrappers ───────────────────────────────────────────────────
 // noStore: MCP uses streaming HTTP — Next.js fetch cache aborts those connections.

@@ -3,8 +3,7 @@
 import { GlucoseCard } from '@/components/glucose/GlucoseCard'
 import { TrendChart } from '@/components/glucose/TrendChart'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { mapDexcomTrend } from '@/lib/dexcom-mcp'
-import { getTrendArrow } from '@/lib/glucose-utils'
+import { getTrendArrow, mapDexcomTrend } from '@/lib/glucose-utils'
 import type { RenderGlucoseChartArtifact } from '@/types/artifacts'
 
 interface GlucoseChartArtifactProps {

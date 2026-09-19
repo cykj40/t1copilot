@@ -1,3 +1,23 @@
+import type { TrendArrow } from '@t1copilot/types'
+
+// ── Trend mapping: Dexcom camelCase → app TrendArrow enum ────────────────────
+const DEXCOM_TREND_MAP: Record<string, TrendArrow> = {
+  none: 'NONE',
+  doubleUp: 'DOUBLE_UP',
+  singleUp: 'SINGLE_UP',
+  fortyFiveUp: 'FORTY_FIVE_UP',
+  flat: 'FLAT',
+  fortyFiveDown: 'FORTY_FIVE_DOWN',
+  singleDown: 'SINGLE_DOWN',
+  doubleDown: 'DOUBLE_DOWN',
+  notComputable: 'NOT_COMPUTABLE',
+  rateOutOfRange: 'RATE_OUT_OF_RANGE',
+}
+
+export function mapDexcomTrend(dexcomTrend: string): TrendArrow {
+  return DEXCOM_TREND_MAP[dexcomTrend] ?? 'NONE'
+}
+
 export type GlucoseStatus = 'critical-low' | 'low' | 'in-range' | 'high' | 'critical-high'
 
 export function getGlucoseStatus(value: number): GlucoseStatus {
