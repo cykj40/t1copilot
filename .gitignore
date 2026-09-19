@@ -44,3 +44,7 @@ coverage
 .idea
 *.swp
 *.swo
+
+# local reference files
+/Screenshot 2026-07-17 at 7.16.57 AM.png
+/t1d_build_tracker.html
