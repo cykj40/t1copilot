@@ -30,10 +30,10 @@
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
-    "dotenv": "^16.0.0",
     "@neondatabase/serverless": "^0.10.4",
     "@paralleldrive/cuid2": "^2.2.2",
-    "drizzle-orm": "^0.38.3"
+    "dotenv": "^16.0.0",
+    "drizzle-orm": "^0.45.2"
   },
   "devDependencies": {
     "drizzle-kit": "^0.30.1",
