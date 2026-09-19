@@ -35,7 +35,7 @@ is preserved at git tag `langgraph-reference`.
 ## Tech Stack
 TypeScript, Next.js 15, Vercel AI SDK, Drizzle ORM,
 Turso, Neon, PGVector, Tailwind CSS, shadcn/ui, 
-Zod, Vitest, Playwright
+Zod, Vitest
 
 ## Medical Disclaimer
 T1Copilot is not a medical device and does not provide 
