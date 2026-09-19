@@ -20,14 +20,14 @@
     "eval:validate": "dotenv -e ../../.env -- tsx --conditions=react-server evals/validate-datasets.ts"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.78",
-    "@ai-sdk/react": "^3.0.186",
+    "@ai-sdk/anthropic": "^3.0.118",
+    "@ai-sdk/react": "^3.0.289",
     "@base-ui/react": "^1.4.1",
     "@t1copilot/db": "workspace:*",
     "@t1copilot/mcp-clients": "workspace:*",
     "@t1copilot/types": "workspace:*",
     "@t1copilot/utils": "workspace:*",
-    "ai": "^6.0.184",
+    "ai": "^6.0.286",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.38.3",
