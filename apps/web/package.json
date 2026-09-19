@@ -57,7 +57,7 @@
     "@vitejs/plugin-react": "^6.0.2",
     "@vitest/coverage-v8": "^4.1.11",
     "autoevals": "^0.3.0",
-    "braintrust": "^3.20.0",
+    "braintrust": "^3.34.0",
     "dotenv-cli": "^11.0.0",
     "happy-dom": "^20.10.3",
     "msw": "^2.14.6",
