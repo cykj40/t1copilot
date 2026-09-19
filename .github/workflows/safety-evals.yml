@@ -13,6 +13,8 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Build web workspace dependencies
+        run: pnpm --filter '@t1copilot/web^...' build
       - name: Safety eval gate
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
