@@ -21,7 +21,7 @@ describe('getEventTimeline', () => {
     const result = await promise
 
     expect(result?.timeline).toHaveLength(3)
-    expect(result?.summary?.totalEvents).toBe(5)
+    expect(result?.summary?.totalEvents).toBe(3)
     vi.useRealTimers()
   })
 

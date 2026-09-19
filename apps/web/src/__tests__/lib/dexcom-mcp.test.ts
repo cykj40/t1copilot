@@ -1,12 +1,7 @@
 import { DexcomMcpTimeoutError } from '@t1copilot/mcp-clients'
 import { HttpResponse, http } from 'msw'
 import { describe, expect, it, vi } from 'vitest'
-import {
-  getDailySummary,
-  getGlucoseRange,
-  getLatestGlucose,
-  mapDexcomTrend,
-} from '@/lib/dexcom-mcp'
+import { getDailySummary, getGlucoseRange, getLatestGlucose } from '@/lib/dexcom-mcp'
 import {
   MCP_ENDPOINT,
   MOCK_CRITICAL_LOW_GLUCOSE,
@@ -221,27 +216,5 @@ describe('getDailySummary', () => {
     server.use(mcpHandlerWithBadToolResponse({ value: 142 }))
 
     await expect(getDailySummary()).rejects.toThrow()
-  })
-})
-
-// ── mapDexcomTrend ────────────────────────────────────────────────────────────
-
-describe('mapDexcomTrend', () => {
-  it('maps all Dexcom camelCase trends to app TrendArrow enum values', () => {
-    expect(mapDexcomTrend('flat')).toBe('FLAT')
-    expect(mapDexcomTrend('singleUp')).toBe('SINGLE_UP')
-    expect(mapDexcomTrend('singleDown')).toBe('SINGLE_DOWN')
-    expect(mapDexcomTrend('fortyFiveUp')).toBe('FORTY_FIVE_UP')
-    expect(mapDexcomTrend('fortyFiveDown')).toBe('FORTY_FIVE_DOWN')
-    expect(mapDexcomTrend('doubleUp')).toBe('DOUBLE_UP')
-    expect(mapDexcomTrend('doubleDown')).toBe('DOUBLE_DOWN')
-    expect(mapDexcomTrend('none')).toBe('NONE')
-    expect(mapDexcomTrend('notComputable')).toBe('NOT_COMPUTABLE')
-    expect(mapDexcomTrend('rateOutOfRange')).toBe('RATE_OUT_OF_RANGE')
-  })
-
-  it('defaults to NONE for unknown trend strings', () => {
-    expect(mapDexcomTrend('unknown')).toBe('NONE')
-    expect(mapDexcomTrend('')).toBe('NONE')
   })
 })

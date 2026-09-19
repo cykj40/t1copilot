@@ -3,16 +3,17 @@ import { HttpResponse, http } from 'msw'
 export const PELOTON_MCP_BASE_URL = 'https://peloton-mcp-server.fly.dev'
 export const PELOTON_MCP_ENDPOINT = `${PELOTON_MCP_BASE_URL}/mcp`
 
+// Synthetic fixtures for deterministic tests; no recorded workouts.
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 export const MOCK_PELOTON_WORKOUTS = [
   {
     id: 'w1',
     discipline: 'Cycling',
-    durationMinutes: 45,
-    startTime: '2026-05-23T10:00:00.000Z',
-    hoursAgo: 2,
-    glucoseDropMgdl: 28,
+    durationMinutes: 20,
+    startTime: '2026-06-09T09:00:00.000Z',
+    hoursAgo: 99,
+    glucoseDropMgdl: 24,
     hypoRisk: 'moderate',
   },
   {
@@ -39,24 +40,24 @@ export const MOCK_PELOTON_SYNC_TEXT =
 export const MOCK_PELOTON_RAW_WORKOUTS = [
   {
     id: 'w1',
-    title: '30 min Cycling',
+    title: '20 min Cycling',
     fitness_discipline: 'cycling',
-    start_time: Math.floor(new Date('2026-06-10T10:00:00.000Z').getTime() / 1000),
-    duration_seconds: 1800,
-    output_watts: 180,
+    start_time: Math.floor(new Date('2026-06-09T09:00:00.000Z').getTime() / 1000),
+    duration_seconds: 1200,
+    output_watts: 160,
   },
 ]
 
 export const MOCK_PELOTON_CORRELATION = {
   workoutId: 'w1',
   discipline: 'Cycling',
-  durationMinutes: 30,
-  startTime: '2026-06-10T10:00:00.000Z',
-  hoursAgo: 2,
-  glucoseDropMgdl: 25,
+  durationMinutes: 20,
+  startTime: '2026-06-09T09:00:00.000Z',
+  hoursAgo: 99,
+  glucoseDropMgdl: 24,
   hypoRisk: 'moderate',
-  preWorkoutGlucose: 155,
-  postWorkoutGlucose: 130,
+  preWorkoutGlucose: 164,
+  postWorkoutGlucose: 140,
 }
 
 function resolvePelotonToolResult(toolName: string, args: Record<string, unknown>): unknown {

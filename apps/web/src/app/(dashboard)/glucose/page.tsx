@@ -2,7 +2,8 @@ export const dynamic = 'force-dynamic'
 
 import { GlucoseCard } from '@/components/glucose/GlucoseCard'
 import { Card, CardContent } from '@/components/ui/card'
-import { getGlucoseRange, mapDexcomTrend } from '@/lib/dexcom-mcp'
+import { getGlucoseRange } from '@/lib/dexcom-mcp'
+import { mapDexcomTrend } from '@/lib/glucose-utils'
 import { GlucoseHistoryClient } from './GlucoseHistoryClient'
 
 export default async function GlucosePage() {

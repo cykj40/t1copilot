@@ -4,7 +4,8 @@ import { GlucoseCard } from '@/components/glucose/GlucoseCard'
 import { TimeInRangeCard } from '@/components/glucose/TimeInRangeCard'
 import { InsightFeed } from '@/components/insights/InsightFeed'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { getLatestGlucose, mapDexcomTrend } from '@/lib/dexcom-mcp'
+import { getLatestGlucose } from '@/lib/dexcom-mcp'
+import { mapDexcomTrend } from '@/lib/glucose-utils'
 import { PLACEHOLDER_RECENT_EVENTS } from '@/lib/placeholder'
 
 const EVENT_ICONS: Record<string, string> = {
