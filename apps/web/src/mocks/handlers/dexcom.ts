@@ -186,16 +186,17 @@ export const MOCK_GET_ADAPTIVE_INSIGHTS = {
   disclaimer: 'Adaptive insights are model-based. Individual response varies.',
 }
 
+// Synthetic events for deterministic tests; no recorded measurements.
 export const MOCK_EVENT_TIMELINE = {
   period: {
     start: '2026-06-06T12:00:00.000Z',
     end: '2026-06-13T12:00:00.000Z',
   },
   summary: {
-    totalEvents: 5,
-    totalInsulin: 12,
-    totalCarbs: 85,
-    exerciseSessions: 2,
+    totalEvents: 3,
+    totalInsulin: 4,
+    totalCarbs: 45,
+    exerciseSessions: 1,
   },
   timeline: [
     {
@@ -211,10 +212,10 @@ export const MOCK_EVENT_TIMELINE = {
       glucoseContext: { value: 118, trend: 'flat' },
     },
     {
-      timestamp: '2026-06-10T10:00:00.000Z',
+      timestamp: '2026-06-09T09:00:00.000Z',
       type: 'exercise',
-      data: { durationMinutes: 30, activityType: 'Cycling' },
-      glucoseContext: { value: 155, trend: 'singleDown' },
+      data: { durationMinutes: 20, activityType: 'Cycling' },
+      glucoseContext: { value: 164, trend: 'singleDown' },
     },
   ],
 }
