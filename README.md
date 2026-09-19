@@ -1,7 +1,7 @@
 # T1Copilot
 > The open source AI copilot for Type 1 diabetes.
 
-Built by a T1D, for T1Ds. T1Copilot connects your Dexcom CGM,
+T1Copilot connects your Dexcom CGM,
 bloodwork, Apple Health, and fitness data into an AI system that
 surfaces real insights, detects patterns, and helps you navigate
 your care.
