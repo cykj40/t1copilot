@@ -58,7 +58,7 @@
     "autoevals": "^0.3.0",
     "braintrust": "^3.34.0",
     "dotenv-cli": "^11.0.0",
-    "happy-dom": "^20.10.3",
+    "happy-dom": "^21.0.4",
     "msw": "^2.14.6",
     "shadcn": "^4.7.0",
     "tailwindcss": "^4.1.4",
